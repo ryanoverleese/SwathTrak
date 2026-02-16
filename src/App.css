@@ -11,11 +11,6 @@
 }
 
 
-/* Leaflet zoom control — aligned with spray button, right side */
-.leaflet-bottom.leaflet-right {
-  bottom: max(45px, calc(45px + env(safe-area-inset-bottom)));
-}
-
 /* ========== Controls overlay ========== */
 .controls {
   position: absolute;
