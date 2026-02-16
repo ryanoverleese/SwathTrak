@@ -4,11 +4,10 @@ interface SessionListProps {
   sessions: SpraySession[];
   onLoad: (session: SpraySession) => void;
   onDelete: (id: string) => void;
-  onClean: (id: string) => void;
   onClose: () => void;
 }
 
-export function SessionList({ sessions, onLoad, onDelete, onClean, onClose }: SessionListProps) {
+export function SessionList({ sessions, onLoad, onDelete, onClose }: SessionListProps) {
   return (
     <div className="session-overlay">
       <div className="session-panel">
@@ -31,16 +30,6 @@ export function SessionList({ sessions, onLoad, onDelete, onClean, onClose }: Se
                     {session.totalAcres.toFixed(2)} acres
                   </span>
                 </div>
-                <button
-                  className="clean-btn"
-                  title="Clean GPS glitches"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClean(session.id);
-                  }}
-                >
-                  Fix GPS
-                </button>
                 <button
                   className="delete-btn"
                   onClick={(e) => {
