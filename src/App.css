@@ -179,17 +179,20 @@
   margin: 16px 0;
 }
 
-.end-session-btn {
-  width: 100%;
-  padding: 14px;
+.finish-btn {
+  padding: 8px 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: 20px;
   background: #ff5722;
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.finish-btn:active {
+  background: #e64a19;
 }
 
 /* Big spray button */

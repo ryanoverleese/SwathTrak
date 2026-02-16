@@ -44,8 +44,9 @@ export function Controls({
           </span>
         </div>
 
-        {/* Spacer to keep top-bar balanced */}
-        <div style={{ width: 44 }} />
+        <button className="finish-btn" onClick={onEndSession}>
+          Finish
+        </button>
       </div>
 
       {/* GPS status */}
@@ -85,11 +86,6 @@ export function Controls({
             ))}
           </div>
 
-          <div className="settings-divider" />
-
-          <button className="end-session-btn" onClick={() => { onEndSession(); setShowSettings(false); }}>
-            Save &amp; End Session
-          </button>
         </div>
       )}
 
