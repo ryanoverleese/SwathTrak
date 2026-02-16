@@ -22,6 +22,7 @@ interface ControlsProps {
   onWidthChange: (width: number) => void;
   onRefill: () => void;
   onEndSession: () => void;
+  onCancelJob: () => void;
   onOpenSessions: () => void;
 }
 
@@ -36,6 +37,7 @@ export function Controls({
   onWidthChange,
   onRefill,
   onEndSession,
+  onCancelJob,
   onOpenSessions,
 }: ControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
@@ -111,6 +113,9 @@ export function Controls({
           </button>
           <button className="stop-action-btn stop-refill" onClick={() => { onSprayToggle(); onRefill(); }}>
             Stop & Refill
+          </button>
+          <button className="cancel-job-btn" onClick={() => { if (confirm('Cancel this job? All unsaved data will be lost.')) onCancelJob(); }}>
+            Cancel Job
           </button>
         </div>
       ) : (

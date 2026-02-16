@@ -294,6 +294,17 @@ function App() {
     setSessions(loadSessions());
   }, []);
 
+  const handleCancelJob = useCallback(() => {
+    setIsSpraying(false);
+    setActiveSwath(null);
+    setTanks([]);
+    setCurrentTankSwaths([]);
+    setCurrentTankStart(Date.now());
+    setPastSessionSwaths([]);
+    setSessionId(generateId());
+    clearActiveSession();
+  }, []);
+
   const totalAcres = calculateTotalAcres(allSwaths, activeSwath);
 
   return (
@@ -315,6 +326,7 @@ function App() {
         onWidthChange={setSprayWidth}
         onRefill={handleRefill}
         onEndSession={handleFinish}
+        onCancelJob={handleCancelJob}
         onOpenSessions={() => {
           setSessions(loadSessions());
           setShowSessions(true);

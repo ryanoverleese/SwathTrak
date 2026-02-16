@@ -339,6 +339,24 @@
   background: #b37d00;
 }
 
+.cancel-job-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #3d352a;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b5f52;
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cancel-job-btn:active {
+  background: rgba(245, 240, 232, 0.05);
+}
+
 /* Rate readout */
 .rate-readout {
   display: flex;
