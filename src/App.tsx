@@ -301,6 +301,9 @@ function App() {
     setCurrentTankSwaths([]);
     setCurrentTankStart(Date.now());
     setPastSessionSwaths([]);
+    setFinishedTanks([]);
+    setShowSummary(false);
+    setShowTankSummary(false);
     setSessionId(generateId());
     clearActiveSession();
   }, []);
@@ -326,7 +329,6 @@ function App() {
         onWidthChange={setSprayWidth}
         onRefill={handleRefill}
         onEndSession={handleFinish}
-        onCancelJob={handleCancelJob}
         onOpenSessions={() => {
           setSessions(loadSessions());
           setShowSessions(true);
@@ -346,6 +348,7 @@ function App() {
           tanks={finishedTanks}
           onSave={handleSaveSummary}
           onCancel={handleCancelSummary}
+          onDeleteJob={handleCancelJob}
         />
       )}
       {showSessions && (

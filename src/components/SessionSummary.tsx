@@ -7,6 +7,7 @@ interface SessionSummaryProps {
   tanks: Tank[];
   onSave: (name: string, gallonsPerTank: (number | undefined)[]) => void;
   onCancel: () => void;
+  onDeleteJob: () => void;
 }
 
 type VolumeUnit = 'gal' | 'pt' | 'oz';
@@ -51,7 +52,7 @@ function calcRate(gallons: number, acres: number, rateUnit: RateUnit): string {
   return `${(gallons / (acres * 43560)).toFixed(4)} gal/ft²`;
 }
 
-export function SessionSummary({ defaultName, tanks, onSave, onCancel }: SessionSummaryProps) {
+export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJob }: SessionSummaryProps) {
   const [name, setName] = useState(defaultName);
   const [volInputs, setVolInputs] = useState<string[]>(
     tanks.map((t) => (t.gallons != null ? String(t.gallons) : ''))
@@ -138,61 +139,9 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel }: Session
           )}
         </div>
 
-        {/* Volume unit picker */}
-        <div className="unit-picker-row">
-          <label className="summary-name-label">Volume Used</label>
-          <div className="unit-picker">
-            {VOL_LABELS.map((u) => (
-              <button
-                key={u}
-                className={`unit-btn${volUnit === u ? ' active' : ''}`}
-                onClick={() => setVolUnit(u)}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Per-tank breakdown */}
-        {tanks.length > 1 && (
-          <div className="tank-breakdown">
-            {tanks.map((tank, i) => {
-              const acres = tankAcres(tank.swaths);
-              const time = calcSprayTime(tank.swaths);
-              const dist = totalSwathDistanceFeet(tank.swaths);
-              const rawVol = parseFloat(volInputs[i]);
-              const tankGal = !isNaN(rawVol) && rawVol > 0 ? rawVol * VOL_TO_GAL[volUnit] : null;
-              return (
-                <div key={tank.id} className="tank-row">
-                  <div className="tank-row-header">
-                    <span className="tank-row-label">Tank {i + 1}</span>
-                    <span className="tank-row-stats">
-                      {acres.toFixed(2)} ac · {formatDistance(dist)} · {formatDuration(time)}
-                    </span>
-                  </div>
-                  <input
-                    className="tank-gallons-input"
-                    type="number"
-                    inputMode="decimal"
-                    placeholder={volUnit}
-                    value={volInputs[i]}
-                    onChange={(e) => setTankVol(i, e.target.value)}
-                  />
-                  {tankGal && acres > 0 && (
-                    <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
-                      <span>{calcRate(tankGal, acres, rateUnit)}</span>
-                      <span className="rate-toggle-hint">tap to switch</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Single tank: just one volume input */}
-        {tanks.length === 1 && (
+        {/* Volume input — matches TankSummary layout */}
+        <label className="summary-name-label">Volume Used</label>
+        {tanks.length === 1 ? (
           <>
             <div className="vol-input-row">
               <input
@@ -203,6 +152,17 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel }: Session
                 value={volInputs[0]}
                 onChange={(e) => setTankVol(0, e.target.value)}
               />
+              <div className="unit-picker">
+                {VOL_LABELS.map((u) => (
+                  <button
+                    key={u}
+                    className={`unit-btn${volUnit === u ? ' active' : ''}`}
+                    onClick={() => setVolUnit(u)}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
             </div>
             {(() => {
               const rawVol = parseFloat(volInputs[0]);
@@ -215,6 +175,56 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel }: Session
                 </div>
               );
             })()}
+          </>
+        ) : (
+          <>
+            <div className="vol-input-row" style={{ marginBottom: 10 }}>
+              <div style={{ flex: 1 }} />
+              <div className="unit-picker">
+                {VOL_LABELS.map((u) => (
+                  <button
+                    key={u}
+                    className={`unit-btn${volUnit === u ? ' active' : ''}`}
+                    onClick={() => setVolUnit(u)}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="tank-breakdown">
+              {tanks.map((tank, i) => {
+                const acres = tankAcres(tank.swaths);
+                const time = calcSprayTime(tank.swaths);
+                const dist = totalSwathDistanceFeet(tank.swaths);
+                const rawVol = parseFloat(volInputs[i]);
+                const tankGal = !isNaN(rawVol) && rawVol > 0 ? rawVol * VOL_TO_GAL[volUnit] : null;
+                return (
+                  <div key={tank.id} className="tank-row">
+                    <div className="tank-row-header">
+                      <span className="tank-row-label">Tank {i + 1}</span>
+                      <span className="tank-row-stats">
+                        {acres.toFixed(2)} ac · {formatDistance(dist)} · {formatDuration(time)}
+                      </span>
+                    </div>
+                    <input
+                      className="tank-gallons-input"
+                      type="number"
+                      inputMode="decimal"
+                      placeholder={volUnit}
+                      value={volInputs[i]}
+                      onChange={(e) => setTankVol(i, e.target.value)}
+                    />
+                    {tankGal && acres > 0 && (
+                      <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
+                        <span>{calcRate(tankGal, acres, rateUnit)}</span>
+                        <span className="rate-toggle-hint">tap to switch</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </>
         )}
 
@@ -237,6 +247,13 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel }: Session
             Save
           </button>
         </div>
+
+        <button
+          className="delete-job-btn"
+          onClick={() => { if (confirm('Delete this job? All unsaved data will be lost.')) onDeleteJob(); }}
+        >
+          Delete Job
+        </button>
       </div>
     </div>
   );
