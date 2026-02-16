@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { SprayMap } from './components/SprayMap';
 import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
+import { SessionSummary } from './components/SessionSummary';
 import { useGps } from './hooks/useGps';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
 import {
@@ -32,6 +33,8 @@ function App() {
   const [showSessions, setShowSessions] = useState(false);
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [finishedSwaths, setFinishedSwaths] = useState<SpraySwath[]>([]);
 
   const activeSwathRef = useRef(activeSwath);
   activeSwathRef.current = activeSwath;
@@ -114,7 +117,7 @@ function App() {
     }
   }, [isSpraying, position, sprayWidth]);
 
-  const handleEndSession = useCallback(() => {
+  const handleFinish = useCallback(() => {
     let allSwaths = swaths;
     if (isSpraying && activeSwathRef.current) {
       const finished: SpraySwath = {
@@ -124,24 +127,40 @@ function App() {
       allSwaths = [...swaths, finished];
     }
 
-    if (allSwaths.length > 0) {
-      const session: SpraySession = {
-        id: sessionId,
-        name: `Session ${new Date().toLocaleDateString()}`,
-        date: new Date().toLocaleDateString(),
-        swaths: allSwaths,
-        totalAcres: calculateTotalAcres(allSwaths, null),
-      };
-      saveSession(session);
-    }
+    if (allSwaths.length === 0) return;
+
+    // Stop spraying and stash the finalized swaths for the summary
+    setIsSpraying(false);
+    setActiveSwath(null);
+    setFinishedSwaths(allSwaths);
+    setShowSummary(true);
+  }, [isSpraying, swaths]);
+
+  const handleSaveSummary = useCallback((name: string, gallons: number | undefined) => {
+    const session: SpraySession = {
+      id: sessionId,
+      name,
+      date: new Date().toLocaleDateString(),
+      swaths: finishedSwaths,
+      totalAcres: calculateTotalAcres(finishedSwaths, null),
+      gallons,
+    };
+    saveSession(session);
 
     setSwaths([]);
-    setActiveSwath(null);
-    setIsSpraying(false);
+    setFinishedSwaths([]);
+    setShowSummary(false);
     setSessionId(generateId());
     clearActiveSession();
     setSessions(loadSessions());
-  }, [isSpraying, swaths, sessionId]);
+  }, [sessionId, finishedSwaths]);
+
+  const handleCancelSummary = useCallback(() => {
+    // Put the swaths back so the user can keep spraying
+    setSwaths(finishedSwaths);
+    setFinishedSwaths([]);
+    setShowSummary(false);
+  }, [finishedSwaths]);
 
   const handleLoadSession = useCallback((session: SpraySession) => {
     setPastSessionSwaths(session.swaths);
@@ -195,12 +214,21 @@ function App() {
         gpsError={gpsError}
         onSprayToggle={handleSprayToggle}
         onWidthChange={setSprayWidth}
-        onEndSession={handleEndSession}
+        onEndSession={handleFinish}
         onOpenSessions={() => {
           setSessions(loadSessions());
           setShowSessions(true);
         }}
       />
+      {showSummary && (
+        <SessionSummary
+          defaultName={`Session ${new Date().toLocaleDateString()}`}
+          swaths={finishedSwaths}
+          totalAcres={calculateTotalAcres(finishedSwaths, null)}
+          onSave={handleSaveSummary}
+          onCancel={handleCancelSummary}
+        />
+      )}
       {showSessions && (
         <SessionList
           sessions={sessions}

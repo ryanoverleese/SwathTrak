@@ -241,6 +241,124 @@
   }
 }
 
+/* ========== Session summary overlay ========== */
+.summary-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.summary-panel {
+  width: calc(100% - 40px);
+  max-width: 360px;
+  background: #1a1a2e;
+  border-radius: 20px;
+  padding: 24px;
+  color: white;
+}
+
+.summary-panel h2 {
+  margin: 0 0 20px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.summary-stats {
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 4px 0;
+  margin-bottom: 20px;
+}
+
+.summary-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.summary-stat-row + .summary-stat-row {
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.summary-label {
+  font-size: 14px;
+  color: rgba(255,255,255,0.6);
+}
+
+.summary-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.summary-name-label {
+  display: block;
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+
+.summary-name-input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  color: #fff;
+  outline: none;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.summary-name-input:focus {
+  border-color: #42a5f5;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.summary-cancel-btn {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.summary-save-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #00e676;
+  color: #000;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.summary-save-btn:active {
+  background: #00c853;
+}
+
 /* ========== Session list overlay ========== */
 .session-overlay {
   position: absolute;
@@ -328,9 +446,9 @@
 }
 
 .edit-icon {
-  font-size: 14px;
   opacity: 0.5;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .session-name-input {

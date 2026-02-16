@@ -19,4 +19,5 @@ export interface SpraySession {
   date: string;
   swaths: SpraySwath[];
   totalAcres: number;
+  gallons?: number;
 }
