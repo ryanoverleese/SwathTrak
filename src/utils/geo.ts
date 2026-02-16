@@ -67,3 +67,29 @@ export function distanceFeet(a: GpsPoint, b: GpsPoint): number {
   const km = turf.distance(from, to, { units: 'kilometers' });
   return km * 3280.84; // km to feet
 }
+
+/**
+ * Remove GPS outlier points from a swath's point array.
+ * Filters out points that imply movement faster than maxMph.
+ */
+export function cleanSwathPoints(points: GpsPoint[], maxMph = 60): GpsPoint[] {
+  if (points.length <= 1) return points;
+
+  const cleaned: GpsPoint[] = [points[0]];
+
+  for (let i = 1; i < points.length; i++) {
+    const prev = cleaned[cleaned.length - 1];
+    const curr = points[i];
+
+    const elapsedSec = (curr.timestamp - prev.timestamp) / 1000;
+    if (elapsedSec > 0) {
+      const feet = distanceFeet(prev, curr);
+      const mph = (feet / elapsedSec) * 0.6818;
+      if (mph > maxMph) continue;
+    }
+
+    cleaned.push(curr);
+  }
+
+  return cleaned;
+}

@@ -3,7 +3,7 @@ import { SprayMap } from './components/SprayMap';
 import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
 import { useGps } from './hooks/useGps';
-import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
+import { buildSwathPolygon, calculateAcres, distanceFeet, cleanSwathPoints } from './utils/geo';
 import {
   loadSessions,
   saveSession,
@@ -151,6 +151,27 @@ function App() {
     setSessions(loadSessions());
   }, []);
 
+  const handleCleanSession = useCallback((id: string) => {
+    const all = loadSessions();
+    const session = all.find((s) => s.id === id);
+    if (!session) return;
+
+    const cleanedSwaths = session.swaths.map((swath) => ({
+      ...swath,
+      points: cleanSwathPoints(swath.points),
+    }));
+
+    const cleanedPolygons = cleanedSwaths.map((s) => buildSwathPolygon(s.points, s.widthFeet));
+    const cleanedSession: SpraySession = {
+      ...session,
+      swaths: cleanedSwaths,
+      totalAcres: calculateAcres(cleanedPolygons),
+    };
+
+    saveSession(cleanedSession);
+    setSessions(loadSessions());
+  }, []);
+
   const totalAcres = calculateTotalAcres(swaths, activeSwath);
 
   return (
@@ -180,6 +201,7 @@ function App() {
           sessions={sessions}
           onLoad={handleLoadSession}
           onDelete={handleDeleteSession}
+          onClean={handleCleanSession}
           onClose={() => setShowSessions(false)}
         />
       )}
