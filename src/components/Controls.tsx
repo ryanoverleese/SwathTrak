@@ -114,15 +114,17 @@ export function Controls({
           <button className="stop-action-btn stop-refill" onClick={() => { onSprayToggle(); onRefill(); }}>
             Stop & Refill
           </button>
-          <button className="cancel-job-btn" onClick={() => { if (confirm('Cancel this job? All unsaved data will be lost.')) onCancelJob(); }}>
-            Cancel Job
-          </button>
         </div>
       ) : (
         <div className="spray-btn-container">
           <button className="spray-btn" onClick={onSprayToggle}>
             SPRAY
           </button>
+          {totalAcres > 0 && (
+            <button className="cancel-job-btn" onClick={() => { if (confirm('Cancel this job? All unsaved data will be lost.')) onCancelJob(); }}>
+              Cancel Job
+            </button>
+          )}
         </div>
       )}
     </div>
