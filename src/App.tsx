@@ -68,6 +68,17 @@ function App() {
     // Only add point if we've moved at least 3 feet (reduce noise)
     if (lastPoint && distanceFeet(lastPoint, position) < 3) return;
 
+    // Reject GPS outliers: if speed between points exceeds 60 mph, skip it
+    // (an ATV spraying isn't going that fast - it's a GPS glitch)
+    if (lastPoint && lastPoint.timestamp && position.timestamp) {
+      const elapsedSec = (position.timestamp - lastPoint.timestamp) / 1000;
+      if (elapsedSec > 0) {
+        const feet = distanceFeet(lastPoint, position);
+        const mph = (feet / elapsedSec) * 0.6818; // ft/s to mph
+        if (mph > 60) return;
+      }
+    }
+
     const updated: SpraySwath = {
       ...current,
       points: [...current.points, position],
