@@ -1,0 +1,8 @@
+{
+  "name": "SwathTrack",
+  "short_name": "SwathTrack",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1814",
+  "theme_color": "#1a1814"
+}
