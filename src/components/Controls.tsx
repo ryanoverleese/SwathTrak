@@ -67,7 +67,7 @@ export function Controls({
           </div>
           <input
             type="range"
-            min="4"
+            min="2"
             max="40"
             step="1"
             value={sprayWidth}
