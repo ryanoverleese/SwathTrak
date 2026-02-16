@@ -680,8 +680,8 @@
 .session-panel {
   width: 100%;
   max-height: 80vh;
-  background: #242018;
-  border-top: 2px solid #e5a000;
+  background: #1a1814;
+  border-top: 3px solid #e5a000;
   border-radius: 8px 8px 0 0;
   padding: 20px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
@@ -739,8 +739,8 @@
 .session-item {
   display: flex;
   align-items: center;
-  background: #1a1814;
-  border: 1px solid #3d352a;
+  background: #2e2820;
+  border: 1px solid #4a3f33;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -785,7 +785,7 @@
 
 .session-info span {
   font-size: 12px;
-  color: #6b5f52;
+  color: #a89a88;
 }
 
 .session-info span:last-child {
