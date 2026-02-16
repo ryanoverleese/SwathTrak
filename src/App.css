@@ -319,8 +319,15 @@
 
 .session-info strong {
   font-size: 15px;
-  border-bottom: 1px dashed rgba(255,255,255,0.3);
-  cursor: text;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-icon {
+  font-size: 14px;
+  opacity: 0.5;
+  cursor: pointer;
 }
 
 .session-name-input {

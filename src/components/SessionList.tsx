@@ -63,13 +63,17 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
-                    <strong
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        startEditing(session);
-                      }}
-                    >
+                    <strong>
                       {session.name}
+                      <span
+                        className="edit-icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startEditing(session);
+                        }}
+                      >
+                        ✏️
+                      </span>
                     </strong>
                   )}
                   <span>{session.date}</span>
