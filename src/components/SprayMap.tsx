@@ -25,9 +25,9 @@ const ACTIVE_SWATH_STYLE: L.PathOptions = {
 };
 
 const PAST_SWATH_STYLE: L.PathOptions = {
-  color: '#888888',
-  fillColor: '#888888',
-  fillOpacity: 0.2,
+  color: '#42a5f5',
+  fillColor: '#42a5f5',
+  fillOpacity: 0.35,
   weight: 1,
 };
 

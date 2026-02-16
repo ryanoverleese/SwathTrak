@@ -111,11 +111,18 @@
   color: white;
 }
 
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .settings-panel label {
   display: block;
   font-size: 16px;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin: 0;
 }
 
 .settings-panel input[type="range"] {
