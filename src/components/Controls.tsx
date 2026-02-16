@@ -45,9 +45,9 @@ export function Controls({
         </div>
 
         <button className="icon-btn" onClick={() => setShowSettings(!showSettings)} title="Settings">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
             <circle cx="12" cy="12" r="3" />
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
           </svg>
         </button>
       </div>
@@ -56,13 +56,13 @@ export function Controls({
       {gpsError && (
         <div className="gps-error">GPS: {gpsError}</div>
       )}
-      {gpsAccuracy !== null && (
+      {gpsAccuracy !== null && !gpsError && (
         <div className={`gps-accuracy ${gpsAccuracy > 10 ? 'poor' : 'good'}`}>
           GPS: ±{Math.round(gpsAccuracy)}m
         </div>
       )}
 
-      {/* Width settings panel */}
+      {/* Settings panel */}
       {showSettings && (
         <div className="settings-panel">
           <label>Spray Width: {sprayWidth} ft</label>
@@ -85,7 +85,10 @@ export function Controls({
               </button>
             ))}
           </div>
-          <button className="end-session-btn" onClick={onEndSession}>
+
+          <div className="settings-divider" />
+
+          <button className="end-session-btn" onClick={() => { onEndSession(); setShowSettings(false); }}>
             Save &amp; End Session
           </button>
         </div>

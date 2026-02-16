@@ -166,6 +166,12 @@
   border-color: #00e676;
 }
 
+.settings-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 16px 0;
+}
+
 .end-session-btn {
   width: 100%;
   padding: 14px;

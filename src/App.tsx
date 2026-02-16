@@ -103,7 +103,6 @@ function App() {
   }, [isSpraying, position, sprayWidth]);
 
   const handleEndSession = useCallback(() => {
-    // Stop if currently spraying
     let allSwaths = swaths;
     if (isSpraying && activeSwathRef.current) {
       const finished: SpraySwath = {

@@ -44,22 +44,21 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
     if (!mapContainer.current || mapRef.current) return;
 
     const map = L.map(mapContainer.current, {
-      center: [39.8283, -98.5795], // center of US
+      center: [39.8283, -98.5795],
       zoom: 5,
       zoomControl: false,
       attributionControl: false,
     });
 
-    // Esri satellite tiles (free, no API key)
+    // Google satellite tiles
     L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
       {
         maxZoom: 20,
-        maxNativeZoom: 18,
+        maxNativeZoom: 20,
       }
     ).addTo(map);
 
-    // Add zoom control to bottom-right so it's out of the way
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     swathLayerRef.current.addTo(map);
@@ -105,7 +104,6 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
     const layer = swathLayerRef.current;
     layer.clearLayers();
 
-    // Completed swaths for current session
     for (const swath of swaths) {
       const poly = buildSwathPolygon(swath.points, swath.widthFeet);
       if (poly) {
@@ -113,7 +111,6 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
       }
     }
 
-    // Active swath (currently spraying)
     if (activeSwath && activeSwath.points.length >= 2) {
       const poly = buildSwathPolygon(activeSwath.points, activeSwath.widthFeet);
       if (poly) {
