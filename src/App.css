@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+
+/* Leaflet zoom control — below top bar */
+.leaflet-top.leaflet-right {
+  top: max(70px, calc(56px + env(safe-area-inset-top)));
+}
+
 /* ========== Controls overlay ========== */
 .controls {
   position: absolute;
@@ -359,6 +365,26 @@
 .rate-toggle-hint {
   font-size: 11px;
   font-weight: 500;
+  color: #6b5f52;
+}
+
+/* Session detail header */
+.detail-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.detail-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #e5a000;
+}
+
+.detail-date {
+  font-size: 13px;
   color: #6b5f52;
 }
 

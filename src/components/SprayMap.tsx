@@ -52,7 +52,7 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
       }
     ).addTo(map);
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'topright' }).addTo(map);
 
     swathLayerRef.current.addTo(map);
     pastLayerRef.current.addTo(map);

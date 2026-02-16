@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import type { SpraySession } from '../types';
+import type { SpraySession, SpraySwath } from '../types';
+import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
 
 interface SessionListProps {
   sessions: SpraySession[];
@@ -10,9 +11,46 @@ interface SessionListProps {
   onClose: () => void;
 }
 
+type RateUnit = 'gal/ac' | 'gal/ft²';
+
+function formatDuration(ms: number): string {
+  const totalSec = Math.round(ms / 1000);
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+}
+
+function formatDistance(feet: number): string {
+  if (feet >= 5280) return `${(feet / 5280).toFixed(2)} mi`;
+  return `${Math.round(feet)} ft`;
+}
+
+function calcSprayTime(swaths: SpraySwath[]): number {
+  let total = 0;
+  for (const s of swaths) {
+    if (s.endTime && s.startTime) total += s.endTime - s.startTime;
+  }
+  return total;
+}
+
+function swathAcres(swaths: SpraySwath[]): number {
+  const polys = swaths.map((s) => buildSwathPolygon(s.points, s.widthFeet)).filter(Boolean) as any[];
+  return calculateAcres(polys);
+}
+
+function calcRate(gallons: number, acres: number, unit: RateUnit): string {
+  if (unit === 'gal/ac') return `${(gallons / acres).toFixed(1)} gal/ac`;
+  return `${(gallons / (acres * 43560)).toFixed(4)} gal/ft²`;
+}
+
 export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, onClose }: SessionListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
+  const [detailSession, setDetailSession] = useState<SpraySession | null>(null);
+  const [rateUnit, setRateUnit] = useState<RateUnit>('gal/ac');
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -34,6 +72,101 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
     setEditingId(null);
   }
 
+  // Session detail modal
+  if (detailSession) {
+    const allSwaths = detailSession.tanks.flatMap((t) => t.swaths);
+    const acres = detailSession.totalAcres || swathAcres(allSwaths);
+    const distance = totalSwathDistanceFeet(allSwaths);
+    const sprayTime = calcSprayTime(allSwaths);
+    const totalGallons = detailSession.tanks.reduce((sum, t) => sum + (t.gallons || 0), 0) || detailSession.gallons || 0;
+
+    return (
+      <div className="summary-overlay">
+        <div className="summary-panel summary-panel-scrollable">
+          <div className="detail-header">
+            <h2>{detailSession.name}</h2>
+            <span className="detail-date">{detailSession.date}</span>
+          </div>
+
+          <div className="summary-stats">
+            <div className="summary-stat-row">
+              <span className="summary-label">Acres</span>
+              <span className="summary-value">{acres.toFixed(2)}</span>
+            </div>
+            <div className="summary-stat-row">
+              <span className="summary-label">Distance</span>
+              <span className="summary-value">{formatDistance(distance)}</span>
+            </div>
+            <div className="summary-stat-row">
+              <span className="summary-label">Spray Time</span>
+              <span className="summary-value">{formatDuration(sprayTime)}</span>
+            </div>
+            <div className="summary-stat-row">
+              <span className="summary-label">Tanks</span>
+              <span className="summary-value">{detailSession.tanks.length}</span>
+            </div>
+            {totalGallons > 0 && (
+              <>
+                <div className="summary-stat-row">
+                  <span className="summary-label">Gallons</span>
+                  <span className="summary-value">{totalGallons.toFixed(1)}</span>
+                </div>
+                {acres > 0 && (
+                  <div className="summary-stat-row" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')} style={{ cursor: 'pointer' }}>
+                    <span className="summary-label">Rate</span>
+                    <span className="summary-value rate-tap">{calcRate(totalGallons, acres, rateUnit)}</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Per-tank breakdown */}
+          {detailSession.tanks.length > 1 && (
+            <div className="tank-breakdown">
+              {detailSession.tanks.map((tank, i) => {
+                const tAcres = swathAcres(tank.swaths);
+                const tDist = totalSwathDistanceFeet(tank.swaths);
+                const tTime = calcSprayTime(tank.swaths);
+                return (
+                  <div key={tank.id} className="tank-row">
+                    <div className="tank-row-header">
+                      <span className="tank-row-label">Tank {i + 1}</span>
+                      <span className="tank-row-stats">
+                        {tAcres.toFixed(2)} ac · {formatDistance(tDist)} · {formatDuration(tTime)}
+                      </span>
+                    </div>
+                    {tank.gallons != null && tank.gallons > 0 && tAcres > 0 && (
+                      <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
+                        <span>{tank.gallons.toFixed(1)} gal</span>
+                        <span>{calcRate(tank.gallons, tAcres, rateUnit)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="summary-actions">
+            <button className="summary-cancel-btn" onClick={() => setDetailSession(null)}>
+              Back
+            </button>
+            <button
+              className="summary-save-btn"
+              onClick={() => {
+                onLoad(detailSession);
+                setDetailSession(null);
+              }}
+            >
+              Show on Map
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="session-overlay">
       <div className="session-panel">
@@ -48,7 +181,7 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
           <div className="session-list">
             {sessions.map((session) => (
               <div key={session.id} className="session-item">
-                <div className="session-info" onClick={() => onLoad(session)}>
+                <div className="session-info" onClick={() => setDetailSession(session)}>
                   {editingId === session.id ? (
                     <input
                       ref={inputRef}
