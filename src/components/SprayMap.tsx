@@ -10,13 +10,6 @@ interface SprayMapProps {
   pastSessionSwaths?: SpraySwath[];
 }
 
-const SWATH_STYLE: L.PathOptions = {
-  color: '#00e676',
-  fillColor: '#00e676',
-  fillOpacity: 0.35,
-  weight: 1,
-};
-
 const ACTIVE_SWATH_STYLE: L.PathOptions = {
   color: '#ffea00',
   fillColor: '#ffea00',
@@ -107,7 +100,13 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
     for (const swath of swaths) {
       const poly = buildSwathPolygon(swath.points, swath.widthFeet);
       if (poly) {
-        L.geoJSON(poly, { style: SWATH_STYLE }).addTo(layer);
+        const style: L.PathOptions = {
+          color: swath.color || '#00e676',
+          fillColor: swath.color || '#00e676',
+          fillOpacity: 0.35,
+          weight: 1,
+        };
+        L.geoJSON(poly, { style }).addTo(layer);
       }
     }
 

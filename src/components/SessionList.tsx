@@ -87,7 +87,7 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                   )}
                   <span>{session.date}</span>
                   <span>
-                    {session.swaths.length} swath{session.swaths.length !== 1 ? 's' : ''} &middot;{' '}
+                    {session.tanks.length} tank{session.tanks.length !== 1 ? 's' : ''} &middot;{' '}
                     {session.totalAcres.toFixed(2)} acres
                     {session.gallons != null && ` · ${session.gallons} gal`}
                   </span>

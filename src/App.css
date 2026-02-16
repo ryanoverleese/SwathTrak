@@ -179,8 +179,29 @@
   margin: 16px 0;
 }
 
+.top-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.refill-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 20px;
+  background: #26c6da;
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.refill-btn:active {
+  background: #00acc1;
+}
+
 .finish-btn {
-  padding: 8px 16px;
+  padding: 8px 14px;
   border: none;
   border-radius: 20px;
   background: #ff5722;
@@ -193,6 +214,10 @@
 
 .finish-btn:active {
   background: #e64a19;
+}
+
+.tank-stat {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Big spray button */
@@ -357,6 +382,62 @@
 
 .summary-save-btn:active {
   background: #00c853;
+}
+
+.summary-panel-scrollable {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Tank breakdown in session summary */
+.tank-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tank-row {
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.tank-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tank-row-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tank-row-stats {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+}
+
+.tank-gallons-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: #fff;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.tank-gallons-input:focus {
+  border-color: #42a5f5;
+}
+
+.tank-gallons-input::placeholder {
+  color: rgba(255,255,255,0.3);
 }
 
 /* ========== Session list overlay ========== */

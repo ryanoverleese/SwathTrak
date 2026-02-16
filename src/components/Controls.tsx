@@ -4,10 +4,12 @@ interface ControlsProps {
   isSpraying: boolean;
   sprayWidth: number;
   totalAcres: number;
+  tankNumber: number;
   gpsAccuracy: number | null;
   gpsError: string | null;
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
+  onRefill: () => void;
   onEndSession: () => void;
   onOpenSessions: () => void;
 }
@@ -16,10 +18,12 @@ export function Controls({
   isSpraying,
   sprayWidth,
   totalAcres,
+  tankNumber,
   gpsAccuracy,
   gpsError,
   onSprayToggle,
   onWidthChange,
+  onRefill,
   onEndSession,
   onOpenSessions,
 }: ControlsProps) {
@@ -37,16 +41,24 @@ export function Controls({
 
         <div className="stats">
           <span className="stat">
-            {totalAcres.toFixed(2)} acres
+            {totalAcres.toFixed(2)} ac
           </span>
           <span className="stat width-stat" onClick={() => setShowSettings(!showSettings)}>
-            {sprayWidth}ft wide
+            {sprayWidth}ft
+          </span>
+          <span className="stat tank-stat">
+            T{tankNumber}
           </span>
         </div>
 
-        <button className="finish-btn" onClick={onEndSession}>
-          Finish
-        </button>
+        <div className="top-bar-actions">
+          <button className="refill-btn" onClick={onRefill}>
+            Refill
+          </button>
+          <button className="finish-btn" onClick={onEndSession}>
+            Finish
+          </button>
+        </div>
       </div>
 
       {/* GPS status */}
