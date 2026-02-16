@@ -8,6 +8,7 @@ import {
   loadSessions,
   saveSession,
   deleteSession,
+  renameSession,
   saveActiveSession,
   loadActiveSession,
   clearActiveSession,
@@ -24,7 +25,7 @@ function App() {
   const [sprayWidth, setSprayWidth] = useState(16);
   const [swaths, setSwaths] = useState<SpraySwath[]>([]);
   const [activeSwath, setActiveSwath] = useState<SpraySwath | null>(null);
-  const [sessionId] = useState(() => {
+  const [sessionId, setSessionId] = useState(() => {
     const saved = loadActiveSession();
     return saved ? saved.id : generateId();
   });
@@ -137,6 +138,7 @@ function App() {
     setSwaths([]);
     setActiveSwath(null);
     setIsSpraying(false);
+    setSessionId(generateId());
     clearActiveSession();
     setSessions(loadSessions());
   }, [isSpraying, swaths, sessionId]);
@@ -144,6 +146,30 @@ function App() {
   const handleLoadSession = useCallback((session: SpraySession) => {
     setPastSessionSwaths(session.swaths);
     setShowSessions(false);
+  }, []);
+
+  const handleResumeSession = useCallback((session: SpraySession) => {
+    // Stop any active spraying first
+    if (isSpraying && activeSwathRef.current) {
+      setIsSpraying(false);
+      setActiveSwath(null);
+    }
+
+    // Restore the session as the active one
+    setSessionId(session.id);
+    setSwaths(session.swaths);
+    setPastSessionSwaths([]);
+
+    // Remove it from saved sessions (it's now the active session)
+    deleteSession(session.id);
+    setSessions(loadSessions());
+
+    setShowSessions(false);
+  }, [isSpraying]);
+
+  const handleRenameSession = useCallback((id: string, name: string) => {
+    renameSession(id, name);
+    setSessions(loadSessions());
   }, []);
 
   const handleDeleteSession = useCallback((id: string) => {
@@ -179,6 +205,8 @@ function App() {
         <SessionList
           sessions={sessions}
           onLoad={handleLoadSession}
+          onResume={handleResumeSession}
+          onRename={handleRenameSession}
           onDelete={handleDeleteSession}
           onClose={() => setShowSessions(false)}
         />

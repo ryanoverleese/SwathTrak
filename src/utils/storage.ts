@@ -28,6 +28,15 @@ export function deleteSession(id: string): void {
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
 }
 
+export function renameSession(id: string, name: string): void {
+  const sessions = loadSessions();
+  const session = sessions.find((s) => s.id === id);
+  if (session) {
+    session.name = name;
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  }
+}
+
 export function saveActiveSession(session: SpraySession): void {
   localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(session));
 }

@@ -319,11 +319,41 @@
 
 .session-info strong {
   font-size: 15px;
+  border-bottom: 1px dashed rgba(255,255,255,0.3);
+  cursor: text;
+}
+
+.session-name-input {
+  font-size: 15px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid #42a5f5;
+  border-radius: 6px;
+  color: #fff;
+  padding: 4px 8px;
+  width: 100%;
+  outline: none;
 }
 
 .session-info span {
   font-size: 13px;
   color: rgba(255,255,255,0.6);
+}
+
+.resume-btn {
+  padding: 10px 14px;
+  background: #42a5f5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.resume-btn:active {
+  background: #1e88e5;
 }
 
 .delete-btn {
