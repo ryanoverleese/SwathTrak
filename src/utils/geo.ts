@@ -61,6 +61,19 @@ export function calculateAcres(
 /**
  * Calculate distance between two GPS points in feet.
  */
+/**
+ * Total distance along a set of swaths in feet.
+ */
+export function totalSwathDistanceFeet(swaths: { points: GpsPoint[] }[]): number {
+  let total = 0;
+  for (const s of swaths) {
+    for (let i = 1; i < s.points.length; i++) {
+      total += distanceFeet(s.points[i - 1], s.points[i]);
+    }
+  }
+  return total;
+}
+
 export function distanceFeet(a: GpsPoint, b: GpsPoint): number {
   const from = turf.point([a.lng, a.lat]);
   const to = turf.point([b.lng, b.lat]);

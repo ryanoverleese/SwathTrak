@@ -1,5 +1,16 @@
 import { useState } from 'react';
 
+// Slider positions 0-58 map to widths 2-60 (step 1), positions 59-64 map to 70-120 (step 10)
+function sliderToWidth(pos: number): number {
+  if (pos <= 58) return pos + 2;           // 0→2, 58→60
+  return 60 + (pos - 58) * 10;             // 59→70, 64→120
+}
+
+function widthToSlider(width: number): number {
+  if (width <= 60) return width - 2;        // 2→0, 60→58
+  return 58 + Math.round((width - 60) / 10); // 70→59, 120→64
+}
+
 interface ControlsProps {
   isSpraying: boolean;
   sprayWidth: number;
@@ -47,18 +58,20 @@ export function Controls({
             {sprayWidth}ft
           </span>
           <span className="stat tank-stat">
-            T{tankNumber}
+            Tank {tankNumber}
           </span>
         </div>
 
-        <div className="top-bar-actions">
-          <button className="refill-btn" onClick={onRefill}>
-            Refill
-          </button>
-          <button className="finish-btn" onClick={onEndSession}>
-            Finish
-          </button>
-        </div>
+        {!isSpraying && totalAcres > 0 && (
+          <div className="top-bar-actions">
+            <button className="refill-btn" onClick={onRefill}>
+              Refill
+            </button>
+            <button className="finish-btn" onClick={onEndSession}>
+              Finish
+            </button>
+          </div>
+        )}
       </div>
 
       {/* GPS status */}
@@ -80,36 +93,33 @@ export function Controls({
           </div>
           <input
             type="range"
-            min="2"
-            max="40"
+            min="0"
+            max="64"
             step="1"
-            value={sprayWidth}
-            onChange={(e) => onWidthChange(Number(e.target.value))}
+            value={widthToSlider(sprayWidth)}
+            onChange={(e) => onWidthChange(sliderToWidth(Number(e.target.value)))}
           />
-          <div className="width-presets">
-            {[8, 12, 16, 20, 24, 30].map((w) => (
-              <button
-                key={w}
-                className={`preset-btn ${w === sprayWidth ? 'active' : ''}`}
-                onClick={() => onWidthChange(w)}
-              >
-                {w}ft
-              </button>
-            ))}
-          </div>
 
         </div>
       )}
 
-      {/* Big spray button */}
-      <div className="spray-btn-container">
-        <button
-          className={`spray-btn ${isSpraying ? 'spraying' : ''}`}
-          onClick={onSprayToggle}
-        >
-          {isSpraying ? 'STOP' : 'SPRAY'}
-        </button>
-      </div>
+      {/* Bottom actions */}
+      {isSpraying ? (
+        <div className="stop-actions">
+          <button className="stop-action-btn stop-end" onClick={() => { onSprayToggle(); onEndSession(); }}>
+            Stop & End
+          </button>
+          <button className="stop-action-btn stop-refill" onClick={() => { onSprayToggle(); onRefill(); }}>
+            Stop & Refill
+          </button>
+        </div>
+      ) : (
+        <div className="spray-btn-container">
+          <button className="spray-btn" onClick={onSprayToggle}>
+            SPRAY
+          </button>
+        </div>
+      )}
     </div>
   );
 }
