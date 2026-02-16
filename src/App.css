@@ -828,3 +828,14 @@
 .delete-btn:active {
   opacity: 0.8;
 }
+
+/* Browser mode — extra bottom padding to clear toolbar */
+@media not (display-mode: standalone) {
+  .spray-btn-container {
+    padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+  }
+
+  .stop-actions {
+    padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+  }
+}
