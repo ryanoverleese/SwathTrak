@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAreaUnit, formatArea } from '../utils/units';
 
 // Slider positions 0-58 map to widths 2-60 (step 1), positions 59-64 map to 70-120 (step 10)
 function sliderToWidth(pos: number): number {
@@ -39,6 +40,7 @@ export function Controls({
   onOpenSessions,
 }: ControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
+  const [areaUnit, cycleArea, areaTap] = useAreaUnit();
 
   return (
     <div className="controls">
@@ -51,11 +53,11 @@ export function Controls({
         </button>
 
         <div className="stats">
-          <span className="stat">
-            {totalAcres.toFixed(2)} ac
+          <span key={areaTap} className="stat tappable" onClick={cycleArea}>
+            {formatArea(totalAcres, areaUnit)}
           </span>
           <span className="stat width-stat" onClick={() => setShowSettings(!showSettings)}>
-            {sprayWidth}ft
+            {sprayWidth} ft
           </span>
           <span className="stat tank-stat">
             Tank {tankNumber}

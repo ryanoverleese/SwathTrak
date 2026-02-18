@@ -4,6 +4,7 @@ import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
 import { SessionSummary } from './components/SessionSummary';
 import { TankSummary } from './components/TankSummary';
+import { Calculator } from './components/Calculator';
 import { useGps } from './hooks/useGps';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
 import {
@@ -15,6 +16,12 @@ import {
   loadActiveSession,
   clearActiveSession,
 } from './utils/storage';
+import {
+  UnitSystemContext,
+  loadUnitSystem,
+  saveUnitSystem,
+} from './utils/units';
+import type { UnitSystem } from './utils/units';
 import type { SpraySwath, SpraySession, Tank } from './types';
 import './App.css';
 
@@ -37,6 +44,7 @@ function tankColor(index: number): string {
 }
 
 function App() {
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(loadUnitSystem);
   const [isSpraying, setIsSpraying] = useState(false);
   const [sprayWidth, setSprayWidth] = useState(16);
 
@@ -51,7 +59,8 @@ function App() {
     const saved = loadActiveSession();
     return saved ? saved.id : generateId();
   });
-  const [showSessions, setShowSessions] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuView, setMenuView] = useState<'menu' | 'sessions' | 'calculator'>('menu');
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
 
@@ -264,7 +273,7 @@ function App() {
   const handleLoadSession = useCallback((session: SpraySession) => {
     const swaths = session.tanks.flatMap((t) => t.swaths);
     setPastSessionSwaths(swaths);
-    setShowSessions(false);
+    setShowMenu(false);
   }, []);
 
   const handleResumeSession = useCallback((session: SpraySession) => {
@@ -281,7 +290,7 @@ function App() {
 
     deleteSession(session.id);
     setSessions(loadSessions());
-    setShowSessions(false);
+    setShowMenu(false);
   }, [isSpraying]);
 
   const handleRenameSession = useCallback((id: string, name: string) => {
@@ -310,7 +319,13 @@ function App() {
 
   const totalAcres = calculateTotalAcres(allSwaths, activeSwath);
 
+  function handleUnitSystem(system: UnitSystem) {
+    setUnitSystem(system);
+    saveUnitSystem(system);
+  }
+
   return (
+    <UnitSystemContext.Provider value={unitSystem}>
     <div className="app">
       <SprayMap
         position={position}
@@ -331,7 +346,8 @@ function App() {
         onEndSession={handleFinish}
         onOpenSessions={() => {
           setSessions(loadSessions());
-          setShowSessions(true);
+          setMenuView('menu');
+          setShowMenu(true);
         }}
       />
       {showTankSummary && (
@@ -351,17 +367,93 @@ function App() {
           onDeleteJob={handleCancelJob}
         />
       )}
-      {showSessions && (
+      {showMenu && menuView === 'menu' && (
+        <div className="session-overlay">
+          <div className="session-panel menu-panel">
+            <div className="session-header">
+              <h2>Menu</h2>
+              <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
+            </div>
+            <div className="menu-options">
+              <button className="menu-option" onClick={() => setMenuView('sessions')}>
+                <div className="menu-option-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                    <path d="M14 2v6h6" />
+                    <path d="M16 13H8" />
+                    <path d="M16 17H8" />
+                    <path d="M10 9H8" />
+                  </svg>
+                </div>
+                <div className="menu-option-text">
+                  <span className="menu-option-title">Sessions</span>
+                  <span className="menu-option-sub">{sessions.length} saved</span>
+                </div>
+                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+              <button className="menu-option" onClick={() => setMenuView('calculator')}>
+                <div className="menu-option-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="4" y="2" width="16" height="20" rx="2" />
+                    <path d="M8 6h8" />
+                    <path d="M8 10h8" />
+                    <path d="M8 14h4" />
+                    <path d="M8 18h4" />
+                    <path d="M14 14h2" />
+                    <path d="M14 18h2" />
+                  </svg>
+                </div>
+                <div className="menu-option-text">
+                  <span className="menu-option-title">Calculator</span>
+                  <span className="menu-option-sub">Mix & coverage</span>
+                </div>
+                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
+            <div className="menu-unit-toggle">
+              <span className="menu-unit-label">Units</span>
+              <div className="menu-unit-segmented">
+                <button
+                  className={`menu-unit-btn${unitSystem === 'imperial' ? ' active' : ''}`}
+                  onClick={() => handleUnitSystem('imperial')}
+                >
+                  Imperial
+                </button>
+                <button
+                  className={`menu-unit-btn${unitSystem === 'metric' ? ' active' : ''}`}
+                  onClick={() => handleUnitSystem('metric')}
+                >
+                  Metric
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showMenu && menuView === 'sessions' && (
         <SessionList
           sessions={sessions}
           onLoad={handleLoadSession}
           onResume={handleResumeSession}
           onRename={handleRenameSession}
           onDelete={handleDeleteSession}
-          onClose={() => setShowSessions(false)}
+          onClose={() => setShowMenu(false)}
+          onBack={() => setMenuView('menu')}
+        />
+      )}
+      {showMenu && menuView === 'calculator' && (
+        <Calculator
+          sessions={sessions}
+          sprayWidth={sprayWidth}
+          onBack={() => setMenuView('menu')}
         />
       )}
     </div>
+    </UnitSystemContext.Provider>
   );
 }
 

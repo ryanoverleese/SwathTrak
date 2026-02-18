@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySwath, Tank } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
+import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
 
 interface SessionSummaryProps {
   defaultName: string;
@@ -11,7 +12,6 @@ interface SessionSummaryProps {
 }
 
 type VolumeUnit = 'gal' | 'pt' | 'oz';
-type RateUnit = 'gal/ac' | 'gal/ft²';
 
 const VOL_TO_GAL: Record<VolumeUnit, number> = { gal: 1, pt: 0.125, oz: 1 / 128 };
 const VOL_LABELS: VolumeUnit[] = ['gal', 'pt', 'oz'];
@@ -47,10 +47,6 @@ function tankAcres(swaths: SpraySwath[]): number {
   return calculateAcres(polys);
 }
 
-function calcRate(gallons: number, acres: number, rateUnit: RateUnit): string {
-  if (rateUnit === 'gal/ac') return `${(gallons / acres).toFixed(1)} gal/ac`;
-  return `${(gallons / (acres * 43560)).toFixed(4)} gal/ft²`;
-}
 
 export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJob }: SessionSummaryProps) {
   const [name, setName] = useState(defaultName);
@@ -58,7 +54,8 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
     tanks.map((t) => (t.gallons != null ? String(t.gallons) : ''))
   );
   const [volUnit, setVolUnit] = useState<VolumeUnit>('gal');
-  const [rateUnit, setRateUnit] = useState<RateUnit>('gal/ac');
+  const [areaUnit, cycleArea, areaTap] = useAreaUnit();
+  const [rateUnit, cycleRate, rateTap] = useRateUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,9 +100,9 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
 
         {/* Session totals */}
         <div className="summary-stats">
-          <div className="summary-stat-row">
+          <div className="summary-stat-row" onClick={cycleArea}>
             <span className="summary-label">Total Acres</span>
-            <span className="summary-value">{totalAcres.toFixed(2)}</span>
+            <span key={areaTap} className="summary-value tappable">{formatArea(totalAcres, areaUnit)}</span>
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Distance</span>
@@ -128,10 +125,10 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                 <span className="summary-value">{totalGallons.toFixed(1)}</span>
               </div>
               {totalAcres > 0 && (
-                <div className="summary-stat-row">
+                <div className="summary-stat-row" onClick={cycleRate}>
                   <span className="summary-label">Rate</span>
-                  <span className="summary-value rate-tap" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
-                    {calcRate(totalGallons, totalAcres, rateUnit)}
+                  <span key={rateTap} className="summary-value rate-tap tappable">
+                    {formatRate(totalGallons, totalAcres, rateUnit)}
                   </span>
                 </div>
               )}
@@ -169,9 +166,8 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
               const gal = !isNaN(rawVol) && rawVol > 0 ? rawVol * VOL_TO_GAL[volUnit] : null;
               if (!gal || totalAcres <= 0) return null;
               return (
-                <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
-                  <span>{calcRate(gal, totalAcres, rateUnit)}</span>
-                  <span className="rate-toggle-hint">tap to switch</span>
+                <div className="rate-readout" onClick={cycleRate}>
+                  <span key={rateTap} className="tappable">{formatRate(gal, totalAcres, rateUnit)}</span>
                 </div>
               );
             })()}
@@ -216,9 +212,8 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                       onChange={(e) => setTankVol(i, e.target.value)}
                     />
                     {tankGal && acres > 0 && (
-                      <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
-                        <span>{calcRate(tankGal, acres, rateUnit)}</span>
-                        <span className="rate-toggle-hint">tap to switch</span>
+                      <div className="rate-readout" onClick={cycleRate}>
+                        <span key={rateTap} className="tappable">{formatRate(tankGal, acres, rateUnit)}</span>
                       </div>
                     )}
                   </div>

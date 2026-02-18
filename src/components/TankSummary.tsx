@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySwath } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
+import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
 
 interface TankSummaryProps {
   tankNumber: number;
@@ -10,7 +11,6 @@ interface TankSummaryProps {
 }
 
 type VolumeUnit = 'gal' | 'pt' | 'oz';
-type RateUnit = 'gal/ac' | 'gal/ft²';
 
 const VOL_TO_GAL: Record<VolumeUnit, number> = { gal: 1, pt: 0.125, oz: 1 / 128 };
 const VOL_LABELS: VolumeUnit[] = ['gal', 'pt', 'oz'];
@@ -44,7 +44,8 @@ function calcSprayTime(swaths: SpraySwath[]): number {
 export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummaryProps) {
   const [volStr, setVolStr] = useState('');
   const [volUnit, setVolUnit] = useState<VolumeUnit>('gal');
-  const [rateUnit, setRateUnit] = useState<RateUnit>('gal/ac');
+  const [areaUnit, cycleArea, areaTap] = useAreaUnit();
+  const [rateUnit, cycleRate, rateTap] = useRateUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,21 +69,15 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
   const rawVol = parseFloat(volStr);
   const gallons = !isNaN(rawVol) && rawVol > 0 ? rawVol * VOL_TO_GAL[volUnit] : null;
 
-  function calcRate(): string | null {
-    if (!gallons || acres <= 0) return null;
-    if (rateUnit === 'gal/ac') return `${(gallons / acres).toFixed(1)} gal/ac`;
-    return `${(gallons / (acres * 43560)).toFixed(4)} gal/ft²`;
-  }
-
   return (
     <div className="summary-overlay">
       <div className="summary-panel">
         <h2>Tank {tankNumber} Complete</h2>
 
         <div className="summary-stats">
-          <div className="summary-stat-row">
+          <div className="summary-stat-row" onClick={cycleArea}>
             <span className="summary-label">Acres</span>
-            <span className="summary-value">{acres.toFixed(2)}</span>
+            <span key={areaTap} className="summary-value tappable">{formatArea(acres, areaUnit)}</span>
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Distance</span>
@@ -125,10 +120,9 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
           </div>
         </div>
 
-        {calcRate() && (
-          <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
-            <span>{calcRate()}</span>
-            <span className="rate-toggle-hint">tap to switch</span>
+        {gallons && acres > 0 && (
+          <div className="rate-readout" onClick={cycleRate}>
+            <span key={rateTap} className="tappable">{formatRate(gallons, acres, rateUnit)}</span>
           </div>
         )}
 

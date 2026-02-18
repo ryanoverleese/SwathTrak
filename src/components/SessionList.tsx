@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySession, SpraySwath } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
+import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
 
 interface SessionListProps {
   sessions: SpraySession[];
@@ -9,9 +10,8 @@ interface SessionListProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  onBack?: () => void;
 }
-
-type RateUnit = 'gal/ac' | 'gal/ft²';
 
 function formatDuration(ms: number): string {
   const totalSec = Math.round(ms / 1000);
@@ -41,16 +41,12 @@ function swathAcres(swaths: SpraySwath[]): number {
   return calculateAcres(polys);
 }
 
-function calcRate(gallons: number, acres: number, unit: RateUnit): string {
-  if (unit === 'gal/ac') return `${(gallons / acres).toFixed(1)} gal/ac`;
-  return `${(gallons / (acres * 43560)).toFixed(4)} gal/ft²`;
-}
-
-export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, onClose }: SessionListProps) {
+export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, onClose, onBack }: SessionListProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [detailSession, setDetailSession] = useState<SpraySession | null>(null);
-  const [rateUnit, setRateUnit] = useState<RateUnit>('gal/ac');
+  const [areaUnit, cycleArea, areaTap] = useAreaUnit();
+  const [rateUnit, cycleRate, rateTap] = useRateUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -89,9 +85,9 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
           </div>
 
           <div className="summary-stats">
-            <div className="summary-stat-row">
+            <div className="summary-stat-row" onClick={cycleArea}>
               <span className="summary-label">Acres</span>
-              <span className="summary-value">{acres.toFixed(2)}</span>
+              <span key={areaTap} className="summary-value tappable">{formatArea(acres, areaUnit)}</span>
             </div>
             <div className="summary-stat-row">
               <span className="summary-label">Distance</span>
@@ -112,9 +108,9 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                   <span className="summary-value">{totalGallons.toFixed(1)}</span>
                 </div>
                 {acres > 0 && (
-                  <div className="summary-stat-row" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')} style={{ cursor: 'pointer' }}>
+                  <div className="summary-stat-row" onClick={cycleRate}>
                     <span className="summary-label">Rate</span>
-                    <span className="summary-value rate-tap">{calcRate(totalGallons, acres, rateUnit)}</span>
+                    <span key={rateTap} className="summary-value rate-tap tappable">{formatRate(totalGallons, acres, rateUnit)}</span>
                   </div>
                 )}
               </>
@@ -137,9 +133,9 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                       </span>
                     </div>
                     {tank.gallons != null && tank.gallons > 0 && tAcres > 0 && (
-                      <div className="rate-readout" onClick={() => setRateUnit(rateUnit === 'gal/ac' ? 'gal/ft²' : 'gal/ac')}>
+                      <div className="rate-readout" onClick={cycleRate}>
                         <span>{tank.gallons.toFixed(1)} gal</span>
-                        <span>{calcRate(tank.gallons, tAcres, rateUnit)}</span>
+                        <span key={rateTap} className="tappable">{formatRate(tank.gallons, tAcres, rateUnit)}</span>
                       </div>
                     )}
                   </div>
@@ -171,7 +167,14 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
     <div className="session-overlay">
       <div className="session-panel">
         <div className="session-header">
-          <h2>Saved Sessions</h2>
+          {onBack ? (
+            <button className="calc-back-btn" onClick={onBack}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          ) : null}
+          <h2>Sessions</h2>
           <button className="close-btn" onClick={onClose}>✕</button>
         </div>
 

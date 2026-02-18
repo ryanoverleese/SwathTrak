@@ -3,6 +3,6 @@
   "short_name": "SwathTrack",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f2ec",
-  "theme_color": "#f5f2ec"
+  "background_color": "#000000",
+  "theme_color": "#000000"
 }
