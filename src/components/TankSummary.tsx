@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySwath } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
-import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
+import {
+  useAreaUnit, useRateUnit, useDistanceUnit, useVolumeUnit,
+  formatArea, formatRate, formatDistance,
+  VOL_TO_GAL,
+} from '../utils/units';
 
 interface TankSummaryProps {
   tankNumber: number;
@@ -9,11 +13,6 @@ interface TankSummaryProps {
   onSave: (gallons: number | undefined) => void;
   onCancel: () => void;
 }
-
-type VolumeUnit = 'gal' | 'pt' | 'oz';
-
-const VOL_TO_GAL: Record<VolumeUnit, number> = { gal: 1, pt: 0.125, oz: 1 / 128 };
-const VOL_LABELS: VolumeUnit[] = ['gal', 'pt', 'oz'];
 
 function formatDuration(ms: number): string {
   const totalSec = Math.round(ms / 1000);
@@ -24,11 +23,6 @@ function formatDuration(ms: number): string {
   if (hrs > 0) return `${hrs}h ${mins}m`;
   if (mins > 0) return `${mins}m ${secs}s`;
   return `${secs}s`;
-}
-
-function formatDistance(feet: number): string {
-  if (feet >= 5280) return `${(feet / 5280).toFixed(2)} mi`;
-  return `${Math.round(feet)} ft`;
 }
 
 function calcSprayTime(swaths: SpraySwath[]): number {
@@ -43,9 +37,10 @@ function calcSprayTime(swaths: SpraySwath[]): number {
 
 export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummaryProps) {
   const [volStr, setVolStr] = useState('');
-  const [volUnit, setVolUnit] = useState<VolumeUnit>('gal');
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
   const [rateUnit, cycleRate, rateTap] = useRateUnit();
+  const [distUnit, cycleDist, distTap] = useDistanceUnit();
+  const [volUnit, cycleVol, volTap] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -76,12 +71,12 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
 
         <div className="summary-stats">
           <div className="summary-stat-row" onClick={cycleArea}>
-            <span className="summary-label">Acres</span>
+            <span className="summary-label">Area</span>
             <span key={areaTap} className="summary-value tappable">{formatArea(acres, areaUnit)}</span>
           </div>
-          <div className="summary-stat-row">
+          <div className="summary-stat-row" onClick={cycleDist}>
             <span className="summary-label">Distance</span>
-            <span className="summary-value">{formatDistance(distance)}</span>
+            <span key={distTap} className="summary-value tappable">{formatDistance(distance, distUnit)}</span>
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Spray Time</span>
@@ -107,17 +102,7 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
               if (e.key === 'Enter') handleSave();
             }}
           />
-          <div className="unit-picker">
-            {VOL_LABELS.map((u) => (
-              <button
-                key={u}
-                className={`unit-btn${volUnit === u ? ' active' : ''}`}
-                onClick={() => setVolUnit(u)}
-              >
-                {u}
-              </button>
-            ))}
-          </div>
+          <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
         </div>
 
         {gallons && acres > 0 && (

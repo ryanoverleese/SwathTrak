@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySwath, Tank } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
-import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
+import {
+  useAreaUnit, useRateUnit, useDistanceUnit, useVolumeUnit,
+  formatArea, formatRate, formatDistance, formatVolume,
+  VOL_TO_GAL,
+} from '../utils/units';
 
 interface SessionSummaryProps {
   defaultName: string;
@@ -10,11 +14,6 @@ interface SessionSummaryProps {
   onCancel: () => void;
   onDeleteJob: () => void;
 }
-
-type VolumeUnit = 'gal' | 'pt' | 'oz';
-
-const VOL_TO_GAL: Record<VolumeUnit, number> = { gal: 1, pt: 0.125, oz: 1 / 128 };
-const VOL_LABELS: VolumeUnit[] = ['gal', 'pt', 'oz'];
 
 function formatDuration(ms: number): string {
   const totalSec = Math.round(ms / 1000);
@@ -25,11 +24,6 @@ function formatDuration(ms: number): string {
   if (hrs > 0) return `${hrs}h ${mins}m`;
   if (mins > 0) return `${mins}m ${secs}s`;
   return `${secs}s`;
-}
-
-function formatDistance(feet: number): string {
-  if (feet >= 5280) return `${(feet / 5280).toFixed(2)} mi`;
-  return `${Math.round(feet)} ft`;
 }
 
 function calcSprayTime(swaths: SpraySwath[]): number {
@@ -53,9 +47,10 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
   const [volInputs, setVolInputs] = useState<string[]>(
     tanks.map((t) => (t.gallons != null ? String(t.gallons) : ''))
   );
-  const [volUnit, setVolUnit] = useState<VolumeUnit>('gal');
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
   const [rateUnit, cycleRate, rateTap] = useRateUnit();
+  const [distUnit, cycleDist, distTap] = useDistanceUnit();
+  const [volUnit, cycleVol, volTap] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -68,7 +63,7 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
   const allSwaths = tanks.flatMap((t) => t.swaths);
   const totalAcres = tankAcres(allSwaths);
   const totalTime = calcSprayTime(allSwaths);
-  const totalDistance = totalSwathDistanceFeet(allSwaths);
+  const totalDistanceFt = totalSwathDistanceFeet(allSwaths);
 
   // Convert all inputs to gallons for totals
   const totalGallons = volInputs.reduce((sum, g) => {
@@ -101,12 +96,12 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
         {/* Session totals */}
         <div className="summary-stats">
           <div className="summary-stat-row" onClick={cycleArea}>
-            <span className="summary-label">Total Acres</span>
+            <span className="summary-label">Total Area</span>
             <span key={areaTap} className="summary-value tappable">{formatArea(totalAcres, areaUnit)}</span>
           </div>
-          <div className="summary-stat-row">
+          <div className="summary-stat-row" onClick={cycleDist}>
             <span className="summary-label">Distance</span>
-            <span className="summary-value">{formatDistance(totalDistance)}</span>
+            <span key={distTap} className="summary-value tappable">{formatDistance(totalDistanceFt, distUnit)}</span>
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Spray Time</span>
@@ -120,14 +115,14 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
           )}
           {totalGallons > 0 && (
             <>
-              <div className="summary-stat-row">
-                <span className="summary-label">Total Gallons</span>
-                <span className="summary-value">{totalGallons.toFixed(1)}</span>
+              <div className="summary-stat-row" onClick={cycleVol}>
+                <span className="summary-label">Total Volume</span>
+                <span key={volTap} className="summary-value tappable">{formatVolume(totalGallons, volUnit)}</span>
               </div>
               {totalAcres > 0 && (
                 <div className="summary-stat-row" onClick={cycleRate}>
                   <span className="summary-label">Rate</span>
-                  <span key={rateTap} className="summary-value rate-tap tappable">
+                  <span key={rateTap} className="summary-value tappable">
                     {formatRate(totalGallons, totalAcres, rateUnit)}
                   </span>
                 </div>
@@ -136,7 +131,7 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
           )}
         </div>
 
-        {/* Volume input — matches TankSummary layout */}
+        {/* Volume input */}
         <label className="summary-name-label">Volume Used</label>
         {tanks.length === 1 ? (
           <>
@@ -149,17 +144,7 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                 value={volInputs[0]}
                 onChange={(e) => setTankVol(0, e.target.value)}
               />
-              <div className="unit-picker">
-                {VOL_LABELS.map((u) => (
-                  <button
-                    key={u}
-                    className={`unit-btn${volUnit === u ? ' active' : ''}`}
-                    onClick={() => setVolUnit(u)}
-                  >
-                    {u}
-                  </button>
-                ))}
-              </div>
+              <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
             </div>
             {(() => {
               const rawVol = parseFloat(volInputs[0]);
@@ -174,19 +159,8 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
           </>
         ) : (
           <>
-            <div className="vol-input-row" style={{ marginBottom: 10 }}>
-              <div style={{ flex: 1 }} />
-              <div className="unit-picker">
-                {VOL_LABELS.map((u) => (
-                  <button
-                    key={u}
-                    className={`unit-btn${volUnit === u ? ' active' : ''}`}
-                    onClick={() => setVolUnit(u)}
-                  >
-                    {u}
-                  </button>
-                ))}
-              </div>
+            <div className="vol-input-row" style={{ marginBottom: 10, justifyContent: 'flex-end' }}>
+              <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
             </div>
             <div className="tank-breakdown">
               {tanks.map((tank, i) => {
@@ -200,7 +174,7 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                     <div className="tank-row-header">
                       <span className="tank-row-label">Tank {i + 1}</span>
                       <span className="tank-row-stats">
-                        {acres.toFixed(2)} ac · {formatDistance(dist)} · {formatDuration(time)}
+                        {formatArea(acres, areaUnit)} · {formatDistance(dist, distUnit)} · {formatDuration(time)}
                       </span>
                     </div>
                     <input

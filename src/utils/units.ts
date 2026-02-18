@@ -92,7 +92,44 @@ function useUnit<T extends string>(
   return [unit, toggle, tapCount, cycle.length > 1];
 }
 
+// ── Distance ─────────────────────────────────
+export type DistanceUnit = 'ft' | 'yd' | 'mi' | 'm' | 'km';
+const DIST_IMP: readonly DistanceUnit[] = ['ft', 'yd', 'mi'];
+const DIST_MET: readonly DistanceUnit[] = ['m', 'km'];
+
+export function formatDistance(feet: number, unit: DistanceUnit): string {
+  switch (unit) {
+    case 'yd': return `${Math.round(feet / 3).toLocaleString()} yd`;
+    case 'mi': return `${(feet / 5280).toFixed(2)} mi`;
+    case 'm': return `${Math.round(feet * 0.3048).toLocaleString()} m`;
+    case 'km': return `${(feet * 0.0003048).toFixed(2)} km`;
+    default: return `${Math.round(feet).toLocaleString()} ft`;
+  }
+}
+
+// ── Volume (input) ───────────────────────────
+export type VolumeUnit = 'gal' | 'pt' | 'oz' | 'L' | 'mL';
+const VOL_IMP: readonly VolumeUnit[] = ['gal', 'pt', 'oz'];
+const VOL_MET: readonly VolumeUnit[] = ['L', 'mL'];
+
+export const VOL_TO_GAL: Record<VolumeUnit, number> = {
+  gal: 1, pt: 0.125, oz: 1 / 128,
+  L: 1 / 3.78541, mL: 1 / 3785.41,
+};
+
+export function formatVolume(gallons: number, unit: VolumeUnit): string {
+  switch (unit) {
+    case 'pt': return `${(gallons * 8).toFixed(1)} pt`;
+    case 'oz': return `${(gallons * 128).toFixed(1)} oz`;
+    case 'L': return `${(gallons * 3.78541).toFixed(1)} L`;
+    case 'mL': return `${Math.round(gallons * 3785.41).toLocaleString()} mL`;
+    default: return `${gallons.toFixed(1)} gal`;
+  }
+}
+
 // ── Pre-built hooks ───────────────────────────
 export function useAreaUnit() { return useUnit<AreaUnit>('ac', 'ha', AREA_IMP, AREA_MET); }
 export function useSpeedUnit() { return useUnit<SpeedUnit>('mph', 'km/h', SPEED_IMP, SPEED_MET); }
 export function useRateUnit() { return useUnit<RateUnit>('gal/ac', 'L/ha', RATE_IMP, RATE_MET); }
+export function useDistanceUnit() { return useUnit<DistanceUnit>('ft', 'm', DIST_IMP, DIST_MET); }
+export function useVolumeUnit() { return useUnit<VolumeUnit>('gal', 'L', VOL_IMP, VOL_MET); }
