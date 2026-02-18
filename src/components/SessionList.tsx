@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SpraySession, SpraySwath } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
-import { useAreaUnit, useRateUnit, formatArea, formatRate } from '../utils/units';
+import {
+  useAreaUnit, useRateUnit, useDistanceUnit,
+  formatArea, formatRate, formatDistance,
+} from '../utils/units';
+import { GlassSelect } from './GlassSelect';
 
 interface SessionListProps {
   sessions: SpraySession[];
@@ -23,11 +27,6 @@ function formatDuration(ms: number): string {
   return `${secs}s`;
 }
 
-function formatDistance(feet: number): string {
-  if (feet >= 5280) return `${(feet / 5280).toFixed(2)} mi`;
-  return `${Math.round(feet)} ft`;
-}
-
 function calcSprayTime(swaths: SpraySwath[]): number {
   let total = 0;
   for (const s of swaths) {
@@ -46,7 +45,8 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
   const [editValue, setEditValue] = useState('');
   const [detailSession, setDetailSession] = useState<SpraySession | null>(null);
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
-  const [rateUnit, cycleRate, rateTap] = useRateUnit();
+  const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
+  const [distUnit, , distTap, , distCycle, selectDist] = useDistanceUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -86,12 +86,24 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
 
           <div className="summary-stats">
             <div className="summary-stat-row" onClick={cycleArea}>
-              <span className="summary-label">Acres</span>
+              <span className="summary-label">Area</span>
               <span key={areaTap} className="summary-value tappable">{formatArea(acres, areaUnit)}</span>
             </div>
             <div className="summary-stat-row">
               <span className="summary-label">Distance</span>
-              <span className="summary-value">{formatDistance(distance)}</span>
+              {distCycle.length > 2 ? (
+                <GlassSelect
+                  value={distUnit}
+                  display={formatDistance(distance, distUnit)}
+                  options={distCycle}
+                  onSelect={(u) => selectDist(u as typeof distUnit)}
+                  tapKey={distTap}
+                />
+              ) : (
+                <span key={distTap} className="summary-value tappable" onClick={() => selectDist(distCycle[distCycle.indexOf(distUnit) === 0 ? 1 : 0])}>
+                  {formatDistance(distance, distUnit)}
+                </span>
+              )}
             </div>
             <div className="summary-stat-row">
               <span className="summary-label">Spray Time</span>
@@ -108,9 +120,21 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                   <span className="summary-value">{totalGallons.toFixed(1)}</span>
                 </div>
                 {acres > 0 && (
-                  <div className="summary-stat-row" onClick={cycleRate}>
+                  <div className="summary-stat-row">
                     <span className="summary-label">Rate</span>
-                    <span key={rateTap} className="summary-value rate-tap tappable">{formatRate(totalGallons, acres, rateUnit)}</span>
+                    {rateCycle.length > 2 ? (
+                      <GlassSelect
+                        value={rateUnit}
+                        display={formatRate(totalGallons, acres, rateUnit)}
+                        options={rateCycle}
+                        onSelect={(u) => selectRate(u as typeof rateUnit)}
+                        tapKey={rateTap}
+                      />
+                    ) : (
+                      <span key={rateTap} className="summary-value tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                        {formatRate(totalGallons, acres, rateUnit)}
+                      </span>
+                    )}
                   </div>
                 )}
               </>
@@ -129,13 +153,26 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                     <div className="tank-row-header">
                       <span className="tank-row-label">Tank {i + 1}</span>
                       <span className="tank-row-stats">
-                        {tAcres.toFixed(2)} ac · {formatDistance(tDist)} · {formatDuration(tTime)}
+                        {formatArea(tAcres, areaUnit)} · {formatDistance(tDist, distUnit)} · {formatDuration(tTime)}
                       </span>
                     </div>
                     {tank.gallons != null && tank.gallons > 0 && tAcres > 0 && (
-                      <div className="rate-readout" onClick={cycleRate}>
+                      <div className="rate-readout">
                         <span>{tank.gallons.toFixed(1)} gal</span>
-                        <span key={rateTap} className="tappable">{formatRate(tank.gallons, tAcres, rateUnit)}</span>
+                        {rateCycle.length > 2 ? (
+                          <GlassSelect
+                            value={rateUnit}
+                            display={formatRate(tank.gallons, tAcres, rateUnit)}
+                            options={rateCycle}
+                            onSelect={(u) => selectRate(u as typeof rateUnit)}
+                            triggerClass="tappable"
+                            tapKey={rateTap}
+                          />
+                        ) : (
+                          <span key={rateTap} className="tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                            {formatRate(tank.gallons, tAcres, rateUnit)}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -224,7 +261,7 @@ export function SessionList({ sessions, onLoad, onResume, onRename, onDelete, on
                   <span>{session.date}</span>
                   <span>
                     {session.tanks.length} tank{session.tanks.length !== 1 ? 's' : ''} &middot;{' '}
-                    {session.totalAcres.toFixed(2)} acres
+                    {formatArea(session.totalAcres, areaUnit)}
                     {session.gallons != null && ` · ${session.gallons} gal`}
                   </span>
                 </div>

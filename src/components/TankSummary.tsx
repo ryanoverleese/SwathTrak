@@ -6,6 +6,7 @@ import {
   formatArea, formatRate, formatDistance,
   VOL_TO_GAL,
 } from '../utils/units';
+import { GlassSelect } from './GlassSelect';
 
 interface TankSummaryProps {
   tankNumber: number;
@@ -38,9 +39,9 @@ function calcSprayTime(swaths: SpraySwath[]): number {
 export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummaryProps) {
   const [volStr, setVolStr] = useState('');
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
-  const [rateUnit, cycleRate, rateTap] = useRateUnit();
-  const [distUnit, cycleDist, distTap] = useDistanceUnit();
-  const [volUnit, cycleVol, volTap] = useVolumeUnit();
+  const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
+  const [distUnit, , distTap, , distCycle, selectDist] = useDistanceUnit();
+  const [volUnit, , volTap, , volCycle, selectVol] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -74,9 +75,21 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
             <span className="summary-label">Area</span>
             <span key={areaTap} className="summary-value tappable">{formatArea(acres, areaUnit)}</span>
           </div>
-          <div className="summary-stat-row" onClick={cycleDist}>
+          <div className="summary-stat-row">
             <span className="summary-label">Distance</span>
-            <span key={distTap} className="summary-value tappable">{formatDistance(distance, distUnit)}</span>
+            {distCycle.length > 2 ? (
+              <GlassSelect
+                value={distUnit}
+                display={formatDistance(distance, distUnit)}
+                options={distCycle}
+                onSelect={(u) => selectDist(u as typeof distUnit)}
+                tapKey={distTap}
+              />
+            ) : (
+              <span key={distTap} className="summary-value tappable" onClick={() => selectDist(distCycle[distCycle.indexOf(distUnit) === 0 ? 1 : 0])}>
+                {formatDistance(distance, distUnit)}
+              </span>
+            )}
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Spray Time</span>
@@ -102,12 +115,38 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
               if (e.key === 'Enter') handleSave();
             }}
           />
-          <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
+          {volCycle.length > 2 ? (
+            <GlassSelect
+              value={volUnit}
+              display={volUnit}
+              options={volCycle}
+              onSelect={(u) => selectVol(u as typeof volUnit)}
+              triggerClass="calc-unit tappable"
+              tapKey={volTap}
+            />
+          ) : (
+            <span key={volTap} className="calc-unit tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+              {volUnit}
+            </span>
+          )}
         </div>
 
         {gallons && acres > 0 && (
-          <div className="rate-readout" onClick={cycleRate}>
-            <span key={rateTap} className="tappable">{formatRate(gallons, acres, rateUnit)}</span>
+          <div className="rate-readout">
+            {rateCycle.length > 2 ? (
+              <GlassSelect
+                value={rateUnit}
+                display={formatRate(gallons, acres, rateUnit)}
+                options={rateCycle}
+                onSelect={(u) => selectRate(u as typeof rateUnit)}
+                triggerClass="tappable"
+                tapKey={rateTap}
+              />
+            ) : (
+              <span key={rateTap} className="tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                {formatRate(gallons, acres, rateUnit)}
+              </span>
+            )}
           </div>
         )}
 

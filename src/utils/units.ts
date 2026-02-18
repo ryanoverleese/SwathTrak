@@ -62,7 +62,7 @@ export function formatRate(gallons: number, acres: number, unit: RateUnit): stri
 function useUnit<T extends string>(
   imperialDefault: T, metricDefault: T,
   imperialCycle: readonly T[], metricCycle: readonly T[],
-): [T, () => void, number, boolean] {
+): [T, () => void, number, boolean, readonly T[], (u: T) => void] {
   const system = useContext(UnitSystemContext);
   const cycle = system === 'metric' ? metricCycle : imperialCycle;
   const systemDefault = system === 'metric' ? metricDefault : imperialDefault;
@@ -89,7 +89,12 @@ function useUnit<T extends string>(
     setTapCount((c) => c + 1);
   }, [cycle]);
 
-  return [unit, toggle, tapCount, cycle.length > 1];
+  const select = useCallback((u: T) => {
+    setUnit(u);
+    setTapCount((c) => c + 1);
+  }, []);
+
+  return [unit, toggle, tapCount, cycle.length > 1, cycle, select];
 }
 
 // ── Distance ─────────────────────────────────

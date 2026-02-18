@@ -6,6 +6,7 @@ import {
   formatArea, formatRate, formatDistance, formatVolume,
   VOL_TO_GAL,
 } from '../utils/units';
+import { GlassSelect } from './GlassSelect';
 
 interface SessionSummaryProps {
   defaultName: string;
@@ -48,9 +49,9 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
     tanks.map((t) => (t.gallons != null ? String(t.gallons) : ''))
   );
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
-  const [rateUnit, cycleRate, rateTap] = useRateUnit();
-  const [distUnit, cycleDist, distTap] = useDistanceUnit();
-  const [volUnit, cycleVol, volTap] = useVolumeUnit();
+  const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
+  const [distUnit, , distTap, , distCycle, selectDist] = useDistanceUnit();
+  const [volUnit, , volTap, , volCycle, selectVol] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,9 +100,21 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
             <span className="summary-label">Total Area</span>
             <span key={areaTap} className="summary-value tappable">{formatArea(totalAcres, areaUnit)}</span>
           </div>
-          <div className="summary-stat-row" onClick={cycleDist}>
+          <div className="summary-stat-row">
             <span className="summary-label">Distance</span>
-            <span key={distTap} className="summary-value tappable">{formatDistance(totalDistanceFt, distUnit)}</span>
+            {distCycle.length > 2 ? (
+              <GlassSelect
+                value={distUnit}
+                display={formatDistance(totalDistanceFt, distUnit)}
+                options={distCycle}
+                onSelect={(u) => selectDist(u as typeof distUnit)}
+                tapKey={distTap}
+              />
+            ) : (
+              <span key={distTap} className="summary-value tappable" onClick={() => selectDist(distCycle[distCycle.indexOf(distUnit) === 0 ? 1 : 0])}>
+                {formatDistance(totalDistanceFt, distUnit)}
+              </span>
+            )}
           </div>
           <div className="summary-stat-row">
             <span className="summary-label">Spray Time</span>
@@ -115,16 +128,38 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
           )}
           {totalGallons > 0 && (
             <>
-              <div className="summary-stat-row" onClick={cycleVol}>
+              <div className="summary-stat-row">
                 <span className="summary-label">Total Volume</span>
-                <span key={volTap} className="summary-value tappable">{formatVolume(totalGallons, volUnit)}</span>
+                {volCycle.length > 2 ? (
+                  <GlassSelect
+                    value={volUnit}
+                    display={formatVolume(totalGallons, volUnit)}
+                    options={volCycle}
+                    onSelect={(u) => selectVol(u as typeof volUnit)}
+                    tapKey={volTap}
+                  />
+                ) : (
+                  <span key={volTap} className="summary-value tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                    {formatVolume(totalGallons, volUnit)}
+                  </span>
+                )}
               </div>
               {totalAcres > 0 && (
-                <div className="summary-stat-row" onClick={cycleRate}>
+                <div className="summary-stat-row">
                   <span className="summary-label">Rate</span>
-                  <span key={rateTap} className="summary-value tappable">
-                    {formatRate(totalGallons, totalAcres, rateUnit)}
-                  </span>
+                  {rateCycle.length > 2 ? (
+                    <GlassSelect
+                      value={rateUnit}
+                      display={formatRate(totalGallons, totalAcres, rateUnit)}
+                      options={rateCycle}
+                      onSelect={(u) => selectRate(u as typeof rateUnit)}
+                      tapKey={rateTap}
+                    />
+                  ) : (
+                    <span key={rateTap} className="summary-value tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                      {formatRate(totalGallons, totalAcres, rateUnit)}
+                    </span>
+                  )}
                 </div>
               )}
             </>
@@ -144,15 +179,41 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                 value={volInputs[0]}
                 onChange={(e) => setTankVol(0, e.target.value)}
               />
-              <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
+              {volCycle.length > 2 ? (
+                <GlassSelect
+                  value={volUnit}
+                  display={volUnit}
+                  options={volCycle}
+                  onSelect={(u) => selectVol(u as typeof volUnit)}
+                  triggerClass="calc-unit tappable"
+                  tapKey={volTap}
+                />
+              ) : (
+                <span key={volTap} className="calc-unit tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                  {volUnit}
+                </span>
+              )}
             </div>
             {(() => {
               const rawVol = parseFloat(volInputs[0]);
               const gal = !isNaN(rawVol) && rawVol > 0 ? rawVol * VOL_TO_GAL[volUnit] : null;
               if (!gal || totalAcres <= 0) return null;
               return (
-                <div className="rate-readout" onClick={cycleRate}>
-                  <span key={rateTap} className="tappable">{formatRate(gal, totalAcres, rateUnit)}</span>
+                <div className="rate-readout">
+                  {rateCycle.length > 2 ? (
+                    <GlassSelect
+                      value={rateUnit}
+                      display={formatRate(gal, totalAcres, rateUnit)}
+                      options={rateCycle}
+                      onSelect={(u) => selectRate(u as typeof rateUnit)}
+                      triggerClass="tappable"
+                      tapKey={rateTap}
+                    />
+                  ) : (
+                    <span key={rateTap} className="tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                      {formatRate(gal, totalAcres, rateUnit)}
+                    </span>
+                  )}
                 </div>
               );
             })()}
@@ -160,7 +221,20 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
         ) : (
           <>
             <div className="vol-input-row" style={{ marginBottom: 10, justifyContent: 'flex-end' }}>
-              <span key={volTap} className="summary-value tappable" onClick={cycleVol}>{volUnit}</span>
+              {volCycle.length > 2 ? (
+                <GlassSelect
+                  value={volUnit}
+                  display={volUnit}
+                  options={volCycle}
+                  onSelect={(u) => selectVol(u as typeof volUnit)}
+                  triggerClass="calc-unit tappable"
+                  tapKey={volTap}
+                />
+              ) : (
+                <span key={volTap} className="calc-unit tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                  {volUnit}
+                </span>
+              )}
             </div>
             <div className="tank-breakdown">
               {tanks.map((tank, i) => {
@@ -186,8 +260,21 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                       onChange={(e) => setTankVol(i, e.target.value)}
                     />
                     {tankGal && acres > 0 && (
-                      <div className="rate-readout" onClick={cycleRate}>
-                        <span key={rateTap} className="tappable">{formatRate(tankGal, acres, rateUnit)}</span>
+                      <div className="rate-readout">
+                        {rateCycle.length > 2 ? (
+                          <GlassSelect
+                            value={rateUnit}
+                            display={formatRate(tankGal, acres, rateUnit)}
+                            options={rateCycle}
+                            onSelect={(u) => selectRate(u as typeof rateUnit)}
+                            triggerClass="tappable"
+                            tapKey={rateTap}
+                          />
+                        ) : (
+                          <span key={rateTap} className="tappable" onClick={() => selectRate(rateCycle[rateCycle.indexOf(rateUnit) === 0 ? 1 : 0])}>
+                            {formatRate(tankGal, acres, rateUnit)}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

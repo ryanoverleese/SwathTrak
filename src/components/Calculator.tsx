@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { useAreaUnit, useSpeedUnit, formatArea, formatSpeed, UnitSystemContext } from '../utils/units';
+import { GlassSelect } from './GlassSelect';
 
 interface CalculatorProps {
   sessions: any[];
@@ -82,6 +83,20 @@ function cycleInput<T extends string>(
     setValue(smartFormat(num * factors[next] / factors[current]));
   }
   setCurrent(next);
+}
+
+/** Select a specific unit and convert the displayed value */
+function selectInput<T extends string>(
+  value: string, setValue: (s: string) => void,
+  current: T, target: T, setCurrent: (u: T) => void,
+  factors: Record<T, number>,
+) {
+  if (current === target) return;
+  const num = parseFloat(value);
+  if (!isNaN(num) && num > 0) {
+    setValue(smartFormat(num * factors[target] / factors[current]));
+  }
+  setCurrent(target);
 }
 
 // ── Persistence ──
@@ -253,10 +268,20 @@ export function Calculator({ sprayWidth, onBack }: CalculatorProps) {
             <div className="calc-input-row">
               <input className="calc-input" type="number" inputMode="decimal" placeholder="0"
                 value={appRate} onChange={(e) => setAppRate(e.target.value)} />
-              <span key={appRateUnit} className="calc-unit tappable"
-                onClick={() => cycleInput(appRate, setAppRate, appRateUnit, setAppRateUnit, appRateCycle, APPRATE_F)}>
-                {appRateUnit}
-              </span>
+              {appRateCycle.length > 2 ? (
+                <GlassSelect
+                  value={appRateUnit}
+                  display={appRateUnit}
+                  options={appRateCycle}
+                  onSelect={(u) => selectInput(appRate, setAppRate, appRateUnit, u as AppRateUnit, setAppRateUnit, APPRATE_F)}
+                  triggerClass="calc-unit tappable"
+                />
+              ) : (
+                <span key={appRateUnit} className="calc-unit tappable"
+                  onClick={() => cycleInput(appRate, setAppRate, appRateUnit, setAppRateUnit, appRateCycle, APPRATE_F)}>
+                  {appRateUnit}
+                </span>
+              )}
             </div>
           </div>
 
@@ -266,10 +291,20 @@ export function Calculator({ sprayWidth, onBack }: CalculatorProps) {
             <div className="calc-input-row">
               <input className="calc-input" type="number" inputMode="decimal" placeholder="0"
                 value={productRate} onChange={(e) => setProductRate(e.target.value)} />
-              <span key={productUnit} className="calc-unit tappable"
-                onClick={() => cycleInput(productRate, setProductRate, productUnit, setProductUnit, prodCycle, APPRATE_F)}>
-                {productUnit}
-              </span>
+              {prodCycle.length > 2 ? (
+                <GlassSelect
+                  value={productUnit}
+                  display={productUnit}
+                  options={prodCycle}
+                  onSelect={(u) => selectInput(productRate, setProductRate, productUnit, u as AppRateUnit, setProductUnit, APPRATE_F)}
+                  triggerClass="calc-unit tappable"
+                />
+              ) : (
+                <span key={productUnit} className="calc-unit tappable"
+                  onClick={() => cycleInput(productRate, setProductRate, productUnit, setProductUnit, prodCycle, APPRATE_F)}>
+                  {productUnit}
+                </span>
+              )}
             </div>
           </div>
 
