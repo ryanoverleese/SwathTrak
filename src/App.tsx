@@ -4,7 +4,6 @@ import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
 import { SessionSummary } from './components/SessionSummary';
 import { TankSummary } from './components/TankSummary';
-import { Calculator } from './components/Calculator';
 import { useGps } from './hooks/useGps';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
 import {
@@ -60,7 +59,7 @@ function App() {
     return saved ? saved.id : generateId();
   });
   const [showMenu, setShowMenu] = useState(false);
-  const [menuView, setMenuView] = useState<'menu' | 'sessions' | 'calculator'>('menu');
+  const [menuView, setMenuView] = useState<'menu' | 'sessions'>('menu');
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
 
@@ -393,26 +392,6 @@ function App() {
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </button>
-              <button className="menu-option" onClick={() => setMenuView('calculator')}>
-                <div className="menu-option-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="4" y="2" width="16" height="20" rx="2" />
-                    <path d="M8 6h8" />
-                    <path d="M8 10h8" />
-                    <path d="M8 14h4" />
-                    <path d="M8 18h4" />
-                    <path d="M14 14h2" />
-                    <path d="M14 18h2" />
-                  </svg>
-                </div>
-                <div className="menu-option-text">
-                  <span className="menu-option-title">Calculator</span>
-                  <span className="menu-option-sub">Mix & coverage</span>
-                </div>
-                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
             </div>
             <div className="menu-unit-toggle">
               <span className="menu-unit-label">Units</span>
@@ -442,13 +421,6 @@ function App() {
           onRename={handleRenameSession}
           onDelete={handleDeleteSession}
           onClose={() => setShowMenu(false)}
-          onBack={() => setMenuView('menu')}
-        />
-      )}
-      {showMenu && menuView === 'calculator' && (
-        <Calculator
-          sessions={sessions}
-          sprayWidth={sprayWidth}
           onBack={() => setMenuView('menu')}
         />
       )}
