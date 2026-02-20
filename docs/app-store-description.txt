@@ -1,0 +1,36 @@
+App Name: SwathTrak
+
+Subtitle (30 chars max):
+GPS Spray Coverage Tracker
+
+Description:
+SwathTrak maps your spray coverage in real time. Start spraying, and your path is drawn on the map with accurate area calculations — so you know exactly what you've covered and what you haven't.
+
+Built for ATV and UTV sprayers working pastures, fence lines, food plots, and fields of any shape.
+
+KEY FEATURES
+
+- Real-time GPS tracking with coverage area displayed on the map
+- Swath width adjustment to match your spray boom
+- Tank management — track coverage per tank and log refills
+- Session history — save, name, and review past spray jobs
+- Works in acres, hectares, square feet, or square meters
+- Imperial and metric unit support
+- No account required — all data stays on your device
+
+HOW IT WORKS
+
+1. Set your spray width
+2. Tap Spray to start tracking
+3. Drive your route — coverage appears on the map in real time
+4. Tap Refill when you need a new tank
+5. Tap Finish to save the session with area and tank totals
+
+SwathTrak works offline once loaded. No subscription, no account, no data collection.
+
+Keywords (100 chars max):
+spray,sprayer,GPS,coverage,acres,ATV,UTV,field,mapping,swath,tracker,pasture,agriculture
+
+Category: Utilities (or Productivity)
+
+Privacy: No data collected

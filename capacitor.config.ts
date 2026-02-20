@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.spraymarker.app',
-  appName: 'SprayMarker',
+  appId: 'com.swathtrak.app',
+  appName: 'SwathTrak',
   webDir: 'dist',
   plugins: {
     Geolocation: {
