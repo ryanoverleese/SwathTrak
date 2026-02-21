@@ -4,6 +4,7 @@ import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
 import { SessionSummary } from './components/SessionSummary';
 import { TankSummary } from './components/TankSummary';
+import { HowTo } from './components/HowTo';
 import { useGps } from './hooks/useGps';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
 import {
@@ -59,7 +60,7 @@ function App() {
     return saved ? saved.id : generateId();
   });
   const [showMenu, setShowMenu] = useState(false);
-  const [menuView, setMenuView] = useState<'menu' | 'sessions'>('menu');
+  const [menuView, setMenuView] = useState<'menu' | 'sessions' | 'howto'>('menu');
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
 
@@ -392,6 +393,22 @@ function App() {
                   <path d="M9 18l6-6-6-6" />
                 </svg>
               </button>
+              <button className="menu-option" onClick={() => setMenuView('howto')}>
+                <div className="menu-option-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </div>
+                <div className="menu-option-text">
+                  <span className="menu-option-title">How To Use</span>
+                  <span className="menu-option-sub">Step-by-step guide</span>
+                </div>
+                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
             </div>
             <div className="menu-unit-toggle">
               <span className="menu-unit-label">Units</span>
@@ -420,6 +437,12 @@ function App() {
           onResume={handleResumeSession}
           onRename={handleRenameSession}
           onDelete={handleDeleteSession}
+          onClose={() => setShowMenu(false)}
+          onBack={() => setMenuView('menu')}
+        />
+      )}
+      {showMenu && menuView === 'howto' && (
+        <HowTo
           onClose={() => setShowMenu(false)}
           onBack={() => setMenuView('menu')}
         />
