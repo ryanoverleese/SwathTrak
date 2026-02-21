@@ -332,6 +332,7 @@ function App() {
         swaths={allSwaths}
         activeSwath={activeSwath}
         pastSessionSwaths={pastSessionSwaths}
+        isSpraying={isSpraying}
       />
       <Controls
         isSpraying={isSpraying}
