@@ -137,6 +137,8 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    // Immediate invalidate for the resize, then again after transition
+    map.invalidateSize();
     const timer = setTimeout(() => map.invalidateSize(), 650);
     return () => clearTimeout(timer);
   }, [isSpraying]);
@@ -145,7 +147,7 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     <div className={`map-container${isSpraying ? ' map-3d' : ''}`}>
       <div
         ref={mapContainer}
-        style={{ width: '100%', height: '100%' }}
+        className={`map-leaflet${isSpraying ? ' map-leaflet-3d' : ''}`}
       />
     </div>
   );
