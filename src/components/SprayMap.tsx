@@ -8,6 +8,7 @@ interface SprayMapProps {
   swaths: SpraySwath[];
   activeSwath: SpraySwath | null;
   pastSessionSwaths?: SpraySwath[];
+  isSpraying?: boolean;
 }
 
 const ACTIVE_SWATH_STYLE: L.PathOptions = {
@@ -24,7 +25,7 @@ const PAST_SWATH_STYLE: L.PathOptions = {
   weight: 1,
 };
 
-export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: SprayMapProps) {
+export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying }: SprayMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
@@ -132,10 +133,20 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths }: S
     }
   }, [pastSessionSwaths]);
 
+  // Notify Leaflet when 3D tilt changes so tiles re-render correctly
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const timer = setTimeout(() => map.invalidateSize(), 650);
+    return () => clearTimeout(timer);
+  }, [isSpraying]);
+
   return (
-    <div
-      ref={mapContainer}
-      style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
-    />
+    <div className={`map-container${isSpraying ? ' map-3d' : ''}`}>
+      <div
+        ref={mapContainer}
+        style={{ width: '100%', height: '100%' }}
+      />
+    </div>
   );
 }
