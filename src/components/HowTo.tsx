@@ -17,6 +17,19 @@ const steps = [
   {
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a7 7 0 1 0 0 14 7 7 0 0 0 0-14z" />
+        <path d="M12 9v3" />
+        <path d="M12 22v-4" />
+        <path d="M2 12h4" />
+        <path d="M18 12h4" />
+      </svg>
+    ),
+    title: 'Wait for GPS Lock',
+    text: 'Let the GPS settle for a few seconds until the accuracy indicator turns green. This ensures your swaths are recorded accurately.',
+  },
+  {
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10" />
         <polygon points="10 8 16 12 10 16 10 8" />
       </svg>
