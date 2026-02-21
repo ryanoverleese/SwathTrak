@@ -1092,6 +1092,11 @@ input[type="number"] {
   padding-bottom: max(30px, env(safe-area-inset-bottom));
 }
 
+.menu-panel::before,
+.howto-panel::before {
+  display: none;
+}
+
 .menu-options {
   display: flex;
   flex-direction: column;
@@ -1228,6 +1233,32 @@ input[type="number"] {
 
 .back-btn:active {
   background: rgba(0, 0, 0, 0.1);
+}
+
+/* ========== Menu Support Link ========== */
+.menu-support {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+  text-align: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-support:active {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.menu-support svg {
+  flex-shrink: 0;
+  opacity: 0.5;
 }
 
 /* ========== How To Panel ========== */
