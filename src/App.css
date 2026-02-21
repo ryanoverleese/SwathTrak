@@ -1092,6 +1092,11 @@ input[type="number"] {
   padding-bottom: max(30px, env(safe-area-inset-bottom));
 }
 
+.menu-panel::before,
+.howto-panel::before {
+  display: none;
+}
+
 .menu-options {
   display: flex;
   flex-direction: column;
