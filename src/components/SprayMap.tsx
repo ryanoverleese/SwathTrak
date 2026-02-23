@@ -9,6 +9,7 @@ interface SprayMapProps {
   activeSwath: SpraySwath | null;
   pastSessionSwaths?: SpraySwath[];
   isSpraying?: boolean;
+  tiltEnabled?: boolean;
   heading?: number | null;
 }
 
@@ -28,7 +29,7 @@ const PAST_SWATH_STYLE: L.PathOptions = {
 
 const TILT_ZOOM_OUT = 1.5; // zoom levels to pull back when tilted
 
-export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, heading }: SprayMapProps) {
+export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, tiltEnabled, heading }: SprayMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
@@ -69,21 +70,21 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     const map = mapRef.current;
     if (!map || !hasInitialZoom.current) return;
 
-    if (isSpraying && !wasSpraying.current) {
-      // Starting to spray — save current zoom then zoom out
+    if (tiltEnabled && !wasSpraying.current) {
+      // Starting tilt — save current zoom then zoom out
       flatZoomRef.current = map.getZoom();
       map.setZoom(flatZoomRef.current - TILT_ZOOM_OUT, { animate: true });
-    } else if (!isSpraying && wasSpraying.current) {
-      // Stopped spraying — restore zoom
+    } else if (!tiltEnabled && wasSpraying.current) {
+      // Stopped tilt — restore zoom
       map.setZoom(flatZoomRef.current, { animate: true });
     }
-    wasSpraying.current = !!isSpraying;
+    wasSpraying.current = !!tiltEnabled;
 
     // Tell Leaflet about the container size change from the CSS transform
     map.invalidateSize();
     const timer = setTimeout(() => map.invalidateSize(), 700);
     return () => clearTimeout(timer);
-  }, [isSpraying]);
+  }, [tiltEnabled]);
 
   // Update position marker and center map
   useEffect(() => {
@@ -163,19 +164,19 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     mapRef.current?.zoomOut();
   }, []);
 
-  const rotation = isSpraying && heading !== null && heading !== undefined ? heading : 0;
+  const rotation = tiltEnabled && heading !== null && heading !== undefined ? heading : 0;
 
   return (
     <>
       <div className="map-wrapper">
-        {isSpraying && <div className="map-sky" />}
+        {tiltEnabled && <div className="map-sky" />}
         <div
-          className={`map-container${isSpraying ? ' map-tilted' : ''}`}
+          className={`map-container${tiltEnabled ? ' map-tilted' : ''}`}
           style={{ '--heading': `${-rotation}deg` } as React.CSSProperties}
         >
           <div
             ref={mapContainer}
-            className={`map-leaflet${isSpraying ? ' map-leaflet-tilted' : ''}`}
+            className={`map-leaflet${tiltEnabled ? ' map-leaflet-tilted' : ''}`}
           />
         </div>
       </div>

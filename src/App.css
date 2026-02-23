@@ -63,10 +63,10 @@
 
 /* Expand Leaflet container to fill gaps when tilted */
 .map-leaflet-tilted {
-  top: -60%;
-  left: -10%;
-  width: 120%;
-  height: 220%;
+  top: -100%;
+  left: -25%;
+  width: 150%;
+  height: 350%;
 }
 
 /* Hide Leaflet tile seams */

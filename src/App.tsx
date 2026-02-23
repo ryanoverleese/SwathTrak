@@ -48,6 +48,9 @@ function App() {
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(loadUnitSystem);
   const [isSpraying, setIsSpraying] = useState(false);
   const [sprayWidth, setSprayWidth] = useState(16);
+  const [sprayView, setSprayView] = useState<'tilted' | 'overhead'>(() => {
+    return (localStorage.getItem('swathtrak_spray_view') as 'tilted' | 'overhead') || 'tilted';
+  });
 
   // Completed tanks in the current session
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -335,6 +338,7 @@ function App() {
         activeSwath={activeSwath}
         pastSessionSwaths={pastSessionSwaths}
         isSpraying={isSpraying}
+        tiltEnabled={isSpraying && sprayView === 'tilted'}
         heading={heading}
       />
       <Controls
@@ -428,6 +432,23 @@ function App() {
                   onClick={() => handleUnitSystem('metric')}
                 >
                   Metric
+                </button>
+              </div>
+            </div>
+            <div className="menu-unit-toggle">
+              <span className="menu-unit-label">Spray View</span>
+              <div className="menu-unit-segmented">
+                <button
+                  className={`menu-unit-btn${sprayView === 'tilted' ? ' active' : ''}`}
+                  onClick={() => { setSprayView('tilted'); localStorage.setItem('swathtrak_spray_view', 'tilted'); }}
+                >
+                  Tilted
+                </button>
+                <button
+                  className={`menu-unit-btn${sprayView === 'overhead' ? ' active' : ''}`}
+                  onClick={() => { setSprayView('overhead'); localStorage.setItem('swathtrak_spray_view', 'overhead'); }}
+                >
+                  Overhead
                 </button>
               </div>
             </div>
