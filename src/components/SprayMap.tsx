@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import type { GpsPoint, SpraySwath } from '../types';
 import { buildSwathPolygon } from '../utils/geo';
@@ -9,7 +9,7 @@ interface SprayMapProps {
   activeSwath: SpraySwath | null;
   pastSessionSwaths?: SpraySwath[];
   isSpraying?: boolean;
-  tiltAngle?: number;
+  heading?: number | null;
 }
 
 const ACTIVE_SWATH_STYLE: L.PathOptions = {
@@ -26,13 +26,17 @@ const PAST_SWATH_STYLE: L.PathOptions = {
   weight: 1,
 };
 
-export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, tiltAngle = 0 }: SprayMapProps) {
+const TILT_ZOOM_OUT = 1.5; // zoom levels to pull back when tilted
+
+export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, heading }: SprayMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
   const swathLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const pastLayerRef = useRef<L.LayerGroup>(L.layerGroup());
   const hasInitialZoom = useRef(false);
+  const flatZoomRef = useRef(18); // remember the zoom level before tilting
+  const wasSpraying = useRef(false);
 
   // Initialize map
   useEffect(() => {
@@ -45,19 +49,13 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
       attributionControl: false,
     });
 
-    // Google satellite tiles
     L.tileLayer(
       'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-      {
-        maxZoom: 20,
-        maxNativeZoom: 20,
-      }
+      { maxZoom: 20, maxNativeZoom: 20 }
     ).addTo(map);
-
 
     swathLayerRef.current.addTo(map);
     pastLayerRef.current.addTo(map);
-
     mapRef.current = map;
 
     return () => {
@@ -65,6 +63,27 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
       mapRef.current = null;
     };
   }, []);
+
+  // Handle tilt transition when spraying starts/stops
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !hasInitialZoom.current) return;
+
+    if (isSpraying && !wasSpraying.current) {
+      // Starting to spray — save current zoom then zoom out
+      flatZoomRef.current = map.getZoom();
+      map.setZoom(flatZoomRef.current - TILT_ZOOM_OUT, { animate: true });
+    } else if (!isSpraying && wasSpraying.current) {
+      // Stopped spraying — restore zoom
+      map.setZoom(flatZoomRef.current, { animate: true });
+    }
+    wasSpraying.current = !!isSpraying;
+
+    // Tell Leaflet about the container size change from the CSS transform
+    map.invalidateSize();
+    const timer = setTimeout(() => map.invalidateSize(), 700);
+    return () => clearTimeout(timer);
+  }, [isSpraying]);
 
   // Update position marker and center map
   useEffect(() => {
@@ -89,19 +108,11 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
       map.setView(latlng, 18);
       hasInitialZoom.current = true;
     } else if (isSpraying) {
-      // When tilted, offset the target so your position sits in the upper third
-      // of the visible area — feels more natural looking "ahead"
-      if (tiltAngle > 0) {
-        const size = map.getSize();
-        const offsetY = size.y * (tiltAngle / 60) * 0.3;
-        const point = map.latLngToContainerPoint(latlng);
-        const offsetLatLng = map.containerPointToLatLng([point.x, point.y - offsetY]);
-        map.panTo(offsetLatLng, { animate: true, duration: 0.5 });
-      } else {
-        map.panTo(latlng, { animate: true, duration: 0.5 });
-      }
+      // Just pan to center — the CSS transform-origin at bottom
+      // naturally pushes the center point to the upper half visually
+      map.panTo(latlng, { animate: true, duration: 0.5 });
     }
-  }, [position, isSpraying, tiltAngle]);
+  }, [position, isSpraying]);
 
   // Render swaths
   useEffect(() => {
@@ -144,39 +155,33 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     }
   }, [pastSessionSwaths]);
 
-  // Adjust zoom and re-render when tilt changes
-  const prevTiltRef = useRef(0);
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.zoomIn();
+  }, []);
 
-    // Zoom out slightly as tilt increases (max ~1.5 zoom levels at 60 degrees)
-    const prevTilt = prevTiltRef.current;
-    if (hasInitialZoom.current && prevTilt !== tiltAngle) {
-      const zoomDelta = (tiltAngle - prevTilt) / 60 * 1.5;
-      const currentZoom = map.getZoom();
-      map.setZoom(currentZoom - zoomDelta, { animate: true });
-    }
-    prevTiltRef.current = tiltAngle;
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.zoomOut();
+  }, []);
 
-    map.invalidateSize();
-    const timer = setTimeout(() => map.invalidateSize(), 450);
-    return () => clearTimeout(timer);
-  }, [tiltAngle]);
-
-  const isTilted = tiltAngle > 0;
+  const rotation = isSpraying && heading !== null && heading !== undefined ? heading : 0;
 
   return (
     <>
-      {isTilted && <div className="map-sky" />}
-      <div
-        className="map-container"
-        style={{ '--tilt': `${tiltAngle}deg`, '--tilt-pct': tiltAngle } as React.CSSProperties}
-      >
+      <div className="map-wrapper">
+        {isSpraying && <div className="map-sky" />}
         <div
-          ref={mapContainer}
-          className={`map-leaflet${isTilted ? ' map-leaflet-3d' : ''}`}
-        />
+          className={`map-container${isSpraying ? ' map-tilted' : ''}`}
+          style={{ '--heading': `${-rotation}deg` } as React.CSSProperties}
+        >
+          <div
+            ref={mapContainer}
+            className={`map-leaflet${isSpraying ? ' map-leaflet-tilted' : ''}`}
+          />
+        </div>
+      </div>
+      <div className="zoom-controls">
+        <button className="zoom-btn" onClick={handleZoomIn}>+</button>
+        <button className="zoom-btn" onClick={handleZoomOut}>−</button>
       </div>
     </>
   );

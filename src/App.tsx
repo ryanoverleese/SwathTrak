@@ -6,6 +6,7 @@ import { SessionSummary } from './components/SessionSummary';
 import { TankSummary } from './components/TankSummary';
 import { HowTo } from './components/HowTo';
 import { useGps } from './hooks/useGps';
+import { useCompass } from './hooks/useCompass';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
 import {
   loadSessions,
@@ -47,7 +48,6 @@ function App() {
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(loadUnitSystem);
   const [isSpraying, setIsSpraying] = useState(false);
   const [sprayWidth, setSprayWidth] = useState(16);
-  const [tiltAngle, setTiltAngle] = useState(0);
 
   // Completed tanks in the current session
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -75,6 +75,7 @@ function App() {
 
   // GPS is always active so we can show position on map
   const { position, error: gpsError, accuracy: gpsAccuracy } = useGps(true);
+  const heading = useCompass(isSpraying);
 
   // Current tank index (completed tanks + 1)
   const tankNumber = tanks.length + 1;
@@ -334,15 +335,13 @@ function App() {
         activeSwath={activeSwath}
         pastSessionSwaths={pastSessionSwaths}
         isSpraying={isSpraying}
-        tiltAngle={tiltAngle}
+        heading={heading}
       />
       <Controls
         isSpraying={isSpraying}
         sprayWidth={sprayWidth}
         totalAcres={totalAcres}
         tankNumber={tankNumber}
-        tiltAngle={tiltAngle}
-        onTiltChange={setTiltAngle}
         gpsAccuracy={gpsAccuracy}
         gpsError={gpsError}
         onSprayToggle={handleSprayToggle}

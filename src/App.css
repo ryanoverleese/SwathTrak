@@ -12,13 +12,23 @@
 
 
 /* ========== Map 3D Perspective Tilt ========== */
+.map-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
 .map-sky {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, #5b9bd5 0%, #87ceeb 40%, #b0dff0 70%, #d4ecf7 100%);
+  background: linear-gradient(to bottom, #4a8ac4 0%, #6baed6 30%, #9dccea 60%, #c8e2f2 100%);
   z-index: 0;
 }
 
@@ -28,86 +38,78 @@
   left: 0;
   width: 100%;
   height: 100%;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: 50% 100%;
-  transform: perspective(1000px) rotateX(var(--tilt, 0deg));
+  transform-origin: 50% 50%;
+  transform: perspective(1200px) rotateX(0deg) rotateZ(0deg);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 1;
+}
+
+.map-container.map-tilted {
+  transform: perspective(1200px) rotateX(45deg) rotateZ(var(--heading, 0deg));
+  transition: transform 0.3s ease-out;
 }
 
 .map-leaflet {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   top: 0;
   left: 0;
+  width: 100%;
+  height: 100%;
+  transition: top 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              left 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Scale up the Leaflet container proportionally to tilt to avoid gaps */
-.map-leaflet-3d {
-  top: calc(var(--tilt-pct, 0) * -1.3%);
-  left: calc(var(--tilt-pct, 0) * -0.33%);
-  width: calc(100% + var(--tilt-pct, 0) * 0.66%);
-  height: calc(100% + var(--tilt-pct, 0) * 2.6%);
+/* Expand Leaflet container to fill gaps when tilted */
+.map-leaflet-tilted {
+  top: -60%;
+  left: -10%;
+  width: 120%;
+  height: 220%;
 }
 
-/* ========== Tilt Slider ========== */
-.tilt-slider-bar {
+/* Hide Leaflet tile seams */
+.leaflet-tile-pane img {
+  width: 256.75px !important;
+  height: 256.75px !important;
+}
+
+.leaflet-container {
+  background: #1a3a1a !important;
+}
+
+/* ========== Zoom Buttons ========== */
+.zoom-controls {
+  position: absolute;
+  top: 80px;
+  right: 14px;
+  z-index: 500;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 16px;
-  padding: 8px 14px;
+  gap: 8px;
+}
+
+.zoom-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(255, 255, 255, 0.25);
   background: rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
-  border: 0.5px solid rgba(255, 255, 255, 0.12);
-}
-
-.tilt-slider-label {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.tilt-slider-value {
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.8);
-  min-width: 28px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.tilt-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  flex: 1;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-  outline: none;
-}
-
-.tilt-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 22px;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease;
+}
+
+.zoom-btn:active {
+  background: rgba(0, 0, 0, 0.55);
 }
 
 /* ========== Controls overlay ========== */

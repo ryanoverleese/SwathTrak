@@ -19,10 +19,8 @@ interface ControlsProps {
   tankNumber: number;
   gpsAccuracy: number | null;
   gpsError: string | null;
-  tiltAngle: number;
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
-  onTiltChange: (angle: number) => void;
   onRefill: () => void;
   onEndSession: () => void;
   onOpenSessions: () => void;
@@ -35,10 +33,8 @@ export function Controls({
   tankNumber,
   gpsAccuracy,
   gpsError,
-  tiltAngle,
   onSprayToggle,
   onWidthChange,
-  onTiltChange,
   onRefill,
   onEndSession,
   onOpenSessions,
@@ -79,23 +75,6 @@ export function Controls({
           </div>
         )}
       </div>
-
-      {/* Tilt slider — horizontal, under the header */}
-      {isSpraying && (
-        <div className="tilt-slider-bar">
-          <span className="tilt-slider-label">Tilt</span>
-          <input
-            className="tilt-slider"
-            type="range"
-            min="0"
-            max="60"
-            step="1"
-            value={tiltAngle}
-            onChange={(e) => onTiltChange(Number(e.target.value))}
-          />
-          <span className="tilt-slider-value">{tiltAngle}°</span>
-        </div>
-      )}
 
       {/* GPS status */}
       {gpsError && (
