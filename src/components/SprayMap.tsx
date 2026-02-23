@@ -89,9 +89,19 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
       map.setView(latlng, 18);
       hasInitialZoom.current = true;
     } else if (isSpraying) {
-      map.panTo(latlng, { animate: true, duration: 0.5 });
+      // When tilted, offset the target so your position sits in the upper third
+      // of the visible area — feels more natural looking "ahead"
+      if (tiltAngle > 0) {
+        const size = map.getSize();
+        const offsetY = size.y * (tiltAngle / 60) * 0.3;
+        const point = map.latLngToContainerPoint(latlng);
+        const offsetLatLng = map.containerPointToLatLng([point.x, point.y - offsetY]);
+        map.panTo(offsetLatLng, { animate: true, duration: 0.5 });
+      } else {
+        map.panTo(latlng, { animate: true, duration: 0.5 });
+      }
     }
-  }, [position, isSpraying]);
+  }, [position, isSpraying, tiltAngle]);
 
   // Render swaths
   useEffect(() => {
@@ -134,10 +144,21 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     }
   }, [pastSessionSwaths]);
 
-  // Notify Leaflet when tilt changes so tiles re-render correctly
+  // Adjust zoom and re-render when tilt changes
+  const prevTiltRef = useRef(0);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
+    // Zoom out slightly as tilt increases (max ~1.5 zoom levels at 60 degrees)
+    const prevTilt = prevTiltRef.current;
+    if (hasInitialZoom.current && prevTilt !== tiltAngle) {
+      const zoomDelta = (tiltAngle - prevTilt) / 60 * 1.5;
+      const currentZoom = map.getZoom();
+      map.setZoom(currentZoom - zoomDelta, { animate: true });
+    }
+    prevTiltRef.current = tiltAngle;
+
     map.invalidateSize();
     const timer = setTimeout(() => map.invalidateSize(), 450);
     return () => clearTimeout(timer);

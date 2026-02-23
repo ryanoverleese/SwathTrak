@@ -55,57 +55,58 @@
 }
 
 /* ========== Tilt Slider ========== */
-.tilt-slider-container {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1000;
+.tilt-slider-bar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
+  margin: 0 16px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
 }
 
 .tilt-slider-label {
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  writing-mode: vertical-lr;
-  transform: rotate(180deg);
-  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.5px;
   text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.tilt-slider-value {
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .tilt-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 120px;
-  height: 32px;
-  background: transparent;
-  writing-mode: vertical-lr;
-  direction: rtl;
-}
-
-.tilt-slider::-webkit-slider-runnable-track {
-  width: 4px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.25);
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
-  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  outline: none;
 }
 
 .tilt-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-  margin-left: -9px;
   cursor: pointer;
 }
 

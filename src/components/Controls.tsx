@@ -80,6 +80,23 @@ export function Controls({
         )}
       </div>
 
+      {/* Tilt slider — horizontal, under the header */}
+      {isSpraying && (
+        <div className="tilt-slider-bar">
+          <span className="tilt-slider-label">Tilt</span>
+          <input
+            className="tilt-slider"
+            type="range"
+            min="0"
+            max="60"
+            step="1"
+            value={tiltAngle}
+            onChange={(e) => onTiltChange(Number(e.target.value))}
+          />
+          <span className="tilt-slider-value">{tiltAngle}°</span>
+        </div>
+      )}
+
       {/* GPS status */}
       {gpsError && (
         <div className="gps-error">GPS: {gpsError}</div>
@@ -106,22 +123,6 @@ export function Controls({
             onChange={(e) => onWidthChange(sliderToWidth(Number(e.target.value)))}
           />
 
-        </div>
-      )}
-
-      {/* Tilt slider — visible while spraying */}
-      {isSpraying && (
-        <div className="tilt-slider-container">
-          <span className="tilt-slider-label">Tilt</span>
-          <input
-            className="tilt-slider"
-            type="range"
-            min="0"
-            max="60"
-            step="1"
-            value={tiltAngle}
-            onChange={(e) => onTiltChange(Number(e.target.value))}
-          />
         </div>
       )}
 
