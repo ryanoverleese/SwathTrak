@@ -47,6 +47,7 @@ function App() {
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(loadUnitSystem);
   const [isSpraying, setIsSpraying] = useState(false);
   const [sprayWidth, setSprayWidth] = useState(16);
+  const [tiltAngle, setTiltAngle] = useState(0);
 
   // Completed tanks in the current session
   const [tanks, setTanks] = useState<Tank[]>([]);
@@ -333,12 +334,15 @@ function App() {
         activeSwath={activeSwath}
         pastSessionSwaths={pastSessionSwaths}
         isSpraying={isSpraying}
+        tiltAngle={tiltAngle}
       />
       <Controls
         isSpraying={isSpraying}
         sprayWidth={sprayWidth}
         totalAcres={totalAcres}
         tankNumber={tankNumber}
+        tiltAngle={tiltAngle}
+        onTiltChange={setTiltAngle}
         gpsAccuracy={gpsAccuracy}
         gpsError={gpsError}
         onSprayToggle={handleSprayToggle}

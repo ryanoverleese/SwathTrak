@@ -9,6 +9,7 @@ interface SprayMapProps {
   activeSwath: SpraySwath | null;
   pastSessionSwaths?: SpraySwath[];
   isSpraying?: boolean;
+  tiltAngle?: number;
 }
 
 const ACTIVE_SWATH_STYLE: L.PathOptions = {
@@ -25,7 +26,7 @@ const PAST_SWATH_STYLE: L.PathOptions = {
   weight: 1,
 };
 
-export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying }: SprayMapProps) {
+export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, tiltAngle = 0 }: SprayMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.CircleMarker | null>(null);
@@ -87,10 +88,10 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     if (!hasInitialZoom.current) {
       map.setView(latlng, 18);
       hasInitialZoom.current = true;
-    } else {
+    } else if (isSpraying) {
       map.panTo(latlng, { animate: true, duration: 0.5 });
     }
-  }, [position]);
+  }, [position, isSpraying]);
 
   // Render swaths
   useEffect(() => {
@@ -133,22 +134,29 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     }
   }, [pastSessionSwaths]);
 
-  // Notify Leaflet when 3D tilt changes so tiles re-render correctly
+  // Notify Leaflet when tilt changes so tiles re-render correctly
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    // Immediate invalidate for the resize, then again after transition
     map.invalidateSize();
-    const timer = setTimeout(() => map.invalidateSize(), 650);
+    const timer = setTimeout(() => map.invalidateSize(), 450);
     return () => clearTimeout(timer);
-  }, [isSpraying]);
+  }, [tiltAngle]);
+
+  const isTilted = tiltAngle > 0;
 
   return (
-    <div className={`map-container${isSpraying ? ' map-3d' : ''}`}>
+    <>
+      {isTilted && <div className="map-sky" />}
       <div
-        ref={mapContainer}
-        className={`map-leaflet${isSpraying ? ' map-leaflet-3d' : ''}`}
-      />
-    </div>
+        className="map-container"
+        style={{ '--tilt': `${tiltAngle}deg`, '--tilt-pct': tiltAngle } as React.CSSProperties}
+      >
+        <div
+          ref={mapContainer}
+          className={`map-leaflet${isTilted ? ' map-leaflet-3d' : ''}`}
+        />
+      </div>
+    </>
   );
 }
