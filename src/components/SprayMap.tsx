@@ -40,6 +40,8 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   const prevTilt = useRef(false);
   const tiltEnabledRef = useRef(false);
   tiltEnabledRef.current = !!tiltEnabled;
+  const tiltAnimating = useRef(false);
+  const tiltTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [mapReady, setMapReady] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -171,13 +173,18 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     };
   }, []);
 
-  // Handle tilt transition — ONLY changes pitch + zoom + padding
-  // Bearing is handled independently by the compass effect below
+  // Handle tilt transition — pitch + zoom + padding only
+  // Sets tiltAnimating flag so the heading effect won't cancel this animation
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     if (!!tiltEnabled === prevTilt.current) return;
     prevTilt.current = !!tiltEnabled;
+
+    // Block heading effect from cancelling this animation
+    tiltAnimating.current = true;
+    clearTimeout(tiltTimer.current);
+    tiltTimer.current = setTimeout(() => { tiltAnimating.current = false; }, 900);
 
     if (tiltEnabled) {
       flatZoomRef.current = map.getZoom();
@@ -187,6 +194,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       map.easeTo({
         pitch: NAV_PITCH,
         zoom: NAV_ZOOM,
+        bearing: lockNorth ? 0 : -(heading ?? 0),
         ...(center ? { center } : {}),
         duration: 800,
       });
@@ -194,6 +202,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     } else {
       map.easeTo({
         pitch: 0,
+        bearing: lockNorth ? 0 : -(heading ?? 0),
         zoom: flatZoomRef.current,
         duration: 800,
       });
@@ -202,22 +211,19 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   }, [tiltEnabled, mapReady]);
 
   // Compass heading → map bearing (independent of tilt)
-  // lockNorth=true: always face north. lockNorth=false: follow device heading.
+  // Suppressed during tilt animation so it can't cancel the pitch transition
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    const pitch = tiltEnabledRef.current ? NAV_PITCH : 0;
+    if (!map || !mapReady || tiltAnimating.current) return;
 
     if (lockNorth) {
-      map.easeTo({ bearing: 0, pitch, duration: 300 });
+      map.easeTo({ bearing: 0, duration: 300 });
       return;
     }
 
     if (heading !== null && heading !== undefined) {
       const opts: maplibregl.EaseToOptions = {
         bearing: -heading,
-        pitch,
         duration: 300,
       };
       if (position) {
