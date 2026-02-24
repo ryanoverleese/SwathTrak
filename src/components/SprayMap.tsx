@@ -38,10 +38,6 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   const hasInitialZoom = useRef(false);
   const flatZoomRef = useRef(18);
   const prevTilt = useRef(false);
-  const tiltEnabledRef = useRef(false);
-  tiltEnabledRef.current = !!tiltEnabled;
-  const tiltAnimating = useRef(false);
-  const tiltTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [mapReady, setMapReady] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -173,36 +169,25 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     };
   }, []);
 
-  // Handle tilt transition — pitch + zoom + padding only
-  // Sets tiltAnimating flag so the heading effect won't cancel this animation
+  // Tilt transition — easeTo only for pitch + zoom (major mode change)
+  // No bearing here — compass controls bearing independently
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     if (!!tiltEnabled === prevTilt.current) return;
     prevTilt.current = !!tiltEnabled;
 
-    // Block heading effect from cancelling this animation
-    tiltAnimating.current = true;
-    clearTimeout(tiltTimer.current);
-    tiltTimer.current = setTimeout(() => { tiltAnimating.current = false; }, 900);
-
     if (tiltEnabled) {
       flatZoomRef.current = map.getZoom();
-      const center = position
-        ? [position.lng, position.lat] as [number, number]
-        : undefined;
       map.easeTo({
         pitch: NAV_PITCH,
         zoom: NAV_ZOOM,
-        bearing: lockNorth ? 0 : -(heading ?? 0),
-        ...(center ? { center } : {}),
         duration: 800,
       });
       map.setPadding({ top: 0, left: 0, right: 0, bottom: NAV_PADDING_BOTTOM });
     } else {
       map.easeTo({
         pitch: 0,
-        bearing: lockNorth ? 0 : -(heading ?? 0),
         zoom: flatZoomRef.current,
         duration: 800,
       });
@@ -210,26 +195,18 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     }
   }, [tiltEnabled, mapReady]);
 
-  // Compass heading → map bearing (independent of tilt)
-  // Suppressed during tilt animation so it can't cancel the pitch transition
+  // Compass heading → bearing via setBearing (never cancels tilt animation)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || tiltAnimating.current) return;
+    if (!map || !mapReady) return;
 
     if (lockNorth) {
-      map.easeTo({ bearing: 0, duration: 300 });
+      map.setBearing(0);
       return;
     }
 
     if (heading !== null && heading !== undefined) {
-      const opts: maplibregl.EaseToOptions = {
-        bearing: -heading,
-        duration: 300,
-      };
-      if (position) {
-        opts.center = [position.lng, position.lat];
-      }
-      map.easeTo(opts);
+      map.setBearing(-heading);
     }
   }, [heading, lockNorth, mapReady]);
 
@@ -253,14 +230,10 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     if (!hasInitialZoom.current) {
       map.jumpTo({ center: [position.lng, position.lat], zoom: 18 });
       hasInitialZoom.current = true;
-    } else if (isSpraying && !tiltEnabled) {
-      // Only pan from here when NOT tilted — tilted view handles centering in the bearing effect
-      map.easeTo({
-        center: [position.lng, position.lat],
-        duration: 500,
-      });
+    } else if (isSpraying) {
+      map.panTo([position.lng, position.lat], { duration: 500 });
     }
-  }, [position, isSpraying, tiltEnabled, mapReady]);
+  }, [position, isSpraying, mapReady]);
 
   // Render current session swaths
   useEffect(() => {
