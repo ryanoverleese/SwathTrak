@@ -9,8 +9,8 @@ const config: CapacitorConfig = {
       // Request precise location on iOS
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#000000',
+      style: 'LIGHT',
+      overlaysWebView: true,
     },
   },
   ios: {

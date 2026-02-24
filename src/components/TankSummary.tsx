@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import type { SpraySwath } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
 import {
@@ -45,11 +45,6 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel, onDeleteJob 
   const [volUnit, , volTap, , volCycle, selectVol] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, []);
 
   const acres = calculateAcres(
     swaths.map((s) => buildSwathPolygon(s.points, s.widthFeet)).filter(Boolean) as any[]

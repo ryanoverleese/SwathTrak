@@ -37,7 +37,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hasInitialZoom = useRef(false);
   const flatZoomRef = useRef(18);
-  const wasTilted = useRef(false);
+  const prevTilt = useRef(false);
   const tiltEnabledRef = useRef(false);
   tiltEnabledRef.current = !!tiltEnabled;
   const [mapReady, setMapReady] = useState(false);
@@ -172,13 +172,15 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   }, []);
 
   // Handle tilt transition — CarPlay-style navigation view
+  // Only reacts to tiltEnabled going true↔false (tracked via prevTilt ref)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !hasInitialZoom.current) return;
+    if (!map || !mapReady) return;
+    // Skip if tilt state hasn't actually changed
+    if (!!tiltEnabled === prevTilt.current) return;
+    prevTilt.current = !!tiltEnabled;
 
-    if (tiltEnabled && !wasTilted.current) {
-      // Starting tilt — save current zoom, swoop to nav view
-      // Combine pitch + bearing + zoom + center into single easeTo to prevent animation conflicts
+    if (tiltEnabled) {
       flatZoomRef.current = map.getZoom();
       const center = position
         ? [position.lng, position.lat] as [number, number]
@@ -191,8 +193,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
         duration: 800,
       });
       map.setPadding({ top: 0, left: 0, right: 0, bottom: NAV_PADDING_BOTTOM });
-    } else if (!tiltEnabled && wasTilted.current) {
-      // Stopped tilt — flatten + restore zoom
+    } else {
       map.easeTo({
         pitch: 0,
         bearing: 0,
@@ -201,7 +202,6 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       });
       map.setPadding({ top: 0, left: 0, right: 0, bottom: 0 });
     }
-    wasTilted.current = !!tiltEnabled;
   }, [tiltEnabled, mapReady]);
 
   // Compass heading → map bearing (while tilted)
@@ -213,7 +213,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     if (!map || !mapReady || !tiltEnabledRef.current) return;
 
     if (lockNorth) {
-      map.easeTo({ bearing: 0, duration: 300 });
+      map.easeTo({ bearing: 0, pitch: NAV_PITCH, duration: 300 });
       return;
     }
 

@@ -33,11 +33,6 @@
   pointer-events: auto;
 }
 
-@media not (display-mode: standalone) {
-  .thumb-actions {
-    bottom: calc(280px + env(safe-area-inset-bottom, 0px));
-  }
-}
 
 .zoom-btn {
   width: 46px;
@@ -1417,13 +1412,3 @@ input[type="number"] {
   line-height: 1.4;
 }
 
-/* Browser mode — extra bottom padding to clear toolbar */
-@media not (display-mode: standalone) {
-  .spray-btn-container {
-    padding-bottom: max(110px, calc(90px + env(safe-area-inset-bottom)));
-  }
-
-  .stop-actions {
-    padding-bottom: max(110px, calc(90px + env(safe-area-inset-bottom)));
-  }
-}

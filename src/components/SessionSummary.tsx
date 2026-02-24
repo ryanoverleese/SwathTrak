@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import type { SpraySwath, Tank } from '../types';
 import { buildSwathPolygon, calculateAcres, totalSwathDistanceFeet } from '../utils/geo';
 import {
@@ -54,12 +54,6 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
   const [volUnit, , volTap, , volCycle, selectVol] = useVolumeUnit();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, []);
 
   const allSwaths = tanks.flatMap((t) => t.swaths);
   const totalAcres = tankAcres(allSwaths);
