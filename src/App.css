@@ -2,10 +2,10 @@
    SwathTrak — Apple Liquid Glass
    ======================================== */
 
-/* Full-screen map app */
+/* Full-screen map app — extends behind notch/Dynamic Island */
 .app {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   position: relative;
   overflow: hidden;
 }
