@@ -13,6 +13,7 @@ interface TankSummaryProps {
   swaths: SpraySwath[];
   onSave: (gallons: number | undefined) => void;
   onCancel: () => void;
+  onDeleteJob: () => void;
 }
 
 function formatDuration(ms: number): string {
@@ -36,7 +37,7 @@ function calcSprayTime(swaths: SpraySwath[]): number {
   return total;
 }
 
-export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummaryProps) {
+export function TankSummary({ tankNumber, swaths, onSave, onCancel, onDeleteJob }: TankSummaryProps) {
   const [volStr, setVolStr] = useState('');
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
   const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
@@ -158,6 +159,9 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel }: TankSummar
             Next Tank
           </button>
         </div>
+        <button className="delete-job-btn" onClick={onDeleteJob}>
+          Delete Job
+        </button>
       </div>
     </div>
   );

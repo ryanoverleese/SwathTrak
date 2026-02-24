@@ -372,6 +372,7 @@ function App() {
           swaths={currentTankSwaths}
           onSave={handleTankSave}
           onCancel={handleTankCancel}
+          onDeleteJob={handleCancelJob}
         />
       )}
       {showSummary && (

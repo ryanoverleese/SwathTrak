@@ -220,9 +220,9 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     if (heading !== null && heading !== undefined) {
       const opts: maplibregl.EaseToOptions = {
         bearing: -heading,
+        pitch: NAV_PITCH,
         duration: 300,
       };
-      // Include center so position + rotation are atomic
       if (position) {
         opts.center = [position.lng, position.lat];
       }
