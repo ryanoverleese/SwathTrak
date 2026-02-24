@@ -305,6 +305,36 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
         </div>
 
         <button
+          className="share-btn"
+          onClick={() => {
+            const lines = [
+              name.trim() || defaultName,
+              `Area: ${formatArea(totalAcres, areaUnit)}`,
+              `Distance: ${formatDistance(totalDistanceFt, distUnit)}`,
+              `Time: ${formatDuration(totalTime)}`,
+              `Tanks: ${tanks.length}`,
+            ];
+            if (totalGallons > 0) {
+              lines.push(`Volume: ${totalGallons.toFixed(1)} gal`);
+              if (totalAcres > 0) lines.push(`Rate: ${formatRate(totalGallons, totalAcres, rateUnit)}`);
+            }
+            const text = lines.join('\n');
+            if (navigator.share) {
+              navigator.share({ title: name.trim() || defaultName, text });
+            } else {
+              navigator.clipboard.writeText(text);
+            }
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+          Share Summary
+        </button>
+
+        <button
           className="delete-job-btn"
           onClick={() => { if (confirm('Delete this job? All unsaved data will be lost.')) onDeleteJob(); }}
         >

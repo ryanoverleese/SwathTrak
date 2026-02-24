@@ -859,6 +859,31 @@ input[type="number"] {
   overflow-y: auto;
 }
 
+/* Share button — amber glass */
+.share-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 0.5px solid rgba(180, 130, 20, 0.3);
+  border-radius: 14px;
+  background: rgba(180, 130, 20, 0.1);
+  color: rgb(160, 115, 15);
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  margin-top: 10px;
+  transition: background 0.2s ease;
+}
+
+.share-btn:active {
+  background: rgba(180, 130, 20, 0.22);
+}
+
 /* Delete job button — subtle glass */
 .delete-job-btn {
   width: 100%;
