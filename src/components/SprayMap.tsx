@@ -38,6 +38,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   const hasInitialZoom = useRef(false);
   const flatZoomRef = useRef(18);
   const prevTilt = useRef(false);
+  const tiltRaf = useRef<number>(0);
   const [mapReady, setMapReady] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -169,48 +170,65 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     };
   }, []);
 
-  // Tilt transition — easeTo only for pitch + zoom (major mode change)
-  // No bearing here — compass controls bearing independently
+  // Tilt transition — manual rAF animation so nothing can cancel it.
+  // MapLibre's easeTo/jumpTo/setBearing ALL cancel in-progress animations,
+  // so we animate pitch+zoom ourselves outside MapLibre's animation system.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     if (!!tiltEnabled === prevTilt.current) return;
     prevTilt.current = !!tiltEnabled;
 
-    if (tiltEnabled) {
-      flatZoomRef.current = map.getZoom();
-      map.easeTo({
-        pitch: NAV_PITCH,
-        zoom: NAV_ZOOM,
-        duration: 800,
+    // Cancel any in-progress tilt animation
+    if (tiltRaf.current) cancelAnimationFrame(tiltRaf.current);
+
+    const fromPitch = map.getPitch();
+    const toPitch = tiltEnabled ? NAV_PITCH : 0;
+    const fromZoom = map.getZoom();
+    const toZoom = tiltEnabled ? NAV_ZOOM : flatZoomRef.current;
+
+    if (tiltEnabled) flatZoomRef.current = fromZoom;
+
+    map.setPadding(tiltEnabled
+      ? { top: 0, left: 0, right: 0, bottom: NAV_PADDING_BOTTOM }
+      : { top: 0, left: 0, right: 0, bottom: 0 });
+
+    const start = performance.now();
+    const duration = 800;
+
+    function frame() {
+      if (!map) return;
+      const t = Math.min(1, (performance.now() - start) / duration);
+      const ease = t < 1 ? t * (2 - t) : 1; // ease-out quad
+      map.jumpTo({
+        pitch: fromPitch + (toPitch - fromPitch) * ease,
+        zoom: fromZoom + (toZoom - fromZoom) * ease,
       });
-      map.setPadding({ top: 0, left: 0, right: 0, bottom: NAV_PADDING_BOTTOM });
-    } else {
-      map.easeTo({
-        pitch: 0,
-        zoom: flatZoomRef.current,
-        duration: 800,
-      });
-      map.setPadding({ top: 0, left: 0, right: 0, bottom: 0 });
+      if (t < 1) {
+        tiltRaf.current = requestAnimationFrame(frame);
+      } else {
+        tiltRaf.current = 0;
+      }
     }
+    tiltRaf.current = requestAnimationFrame(frame);
+
+    return () => {
+      if (tiltRaf.current) cancelAnimationFrame(tiltRaf.current);
+    };
   }, [tiltEnabled, mapReady]);
 
-  // Compass heading → bearing via setBearing (never cancels tilt animation)
+  // Compass heading → bearing (instant via jumpTo, only sets bearing)
+  // jumpTo({ bearing }) does NOT touch pitch or zoom — only specified properties.
+  // Its stop() call kills MapLibre animations but not our rAF tilt loop.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    if (lockNorth) {
-      map.setBearing(0);
-      return;
-    }
-
-    if (heading !== null && heading !== undefined) {
-      map.setBearing(-heading);
-    }
+    const bearing = lockNorth ? 0 : -(heading ?? 0);
+    map.jumpTo({ bearing });
   }, [heading, lockNorth, mapReady]);
 
-  // Update position marker and center map
+  // Update position marker and center map (instant via jumpTo)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !position) return;
@@ -231,7 +249,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       map.jumpTo({ center: [position.lng, position.lat], zoom: 18 });
       hasInitialZoom.current = true;
     } else if (isSpraying) {
-      map.panTo([position.lng, position.lat], { duration: 500 });
+      map.jumpTo({ center: [position.lng, position.lat] });
     }
   }, [position, isSpraying, mapReady]);
 
