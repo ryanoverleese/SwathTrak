@@ -171,12 +171,11 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     };
   }, []);
 
-  // Handle tilt transition — CarPlay-style navigation view
-  // Only reacts to tiltEnabled going true↔false (tracked via prevTilt ref)
+  // Handle tilt transition — ONLY changes pitch + zoom + padding
+  // Bearing is handled independently by the compass effect below
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    // Skip if tilt state hasn't actually changed
     if (!!tiltEnabled === prevTilt.current) return;
     prevTilt.current = !!tiltEnabled;
 
@@ -188,7 +187,6 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       map.easeTo({
         pitch: NAV_PITCH,
         zoom: NAV_ZOOM,
-        bearing: lockNorth ? 0 : -(heading ?? 0),
         ...(center ? { center } : {}),
         duration: 800,
       });
@@ -196,7 +194,6 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     } else {
       map.easeTo({
         pitch: 0,
-        bearing: 0,
         zoom: flatZoomRef.current,
         duration: 800,
       });
@@ -204,23 +201,23 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     }
   }, [tiltEnabled, mapReady]);
 
-  // Compass heading → map bearing (while tilted)
-  // Uses tiltEnabledRef instead of tiltEnabled in deps so this effect does NOT fire
-  // when tilt starts — the tilt effect above already sets the initial bearing.
-  // This only fires on subsequent heading/lockNorth changes.
+  // Compass heading → map bearing (independent of tilt)
+  // lockNorth=true: always face north. lockNorth=false: follow device heading.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !tiltEnabledRef.current) return;
+    if (!map || !mapReady) return;
+
+    const pitch = tiltEnabledRef.current ? NAV_PITCH : 0;
 
     if (lockNorth) {
-      map.easeTo({ bearing: 0, pitch: NAV_PITCH, duration: 300 });
+      map.easeTo({ bearing: 0, pitch, duration: 300 });
       return;
     }
 
     if (heading !== null && heading !== undefined) {
       const opts: maplibregl.EaseToOptions = {
         bearing: -heading,
-        pitch: NAV_PITCH,
+        pitch,
         duration: 300,
       };
       if (position) {
