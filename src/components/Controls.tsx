@@ -21,7 +21,6 @@ interface ControlsProps {
   gpsError: string | null;
   lockNorth: boolean;
   compassRotation: number;
-  heading: number | null;
   sprayView: 'tilted' | 'overhead';
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
@@ -44,7 +43,6 @@ export function Controls({
   gpsError,
   lockNorth,
   compassRotation,
-  heading,
   sprayView,
   onSprayToggle,
   onWidthChange,
@@ -134,7 +132,7 @@ export function Controls({
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
             style={{
-              transform: `rotate(${lockNorth && heading != null ? -heading : compassRotation}deg)`,
+              transform: `rotate(${compassRotation}deg)`,
               transition: 'transform 0.3s ease-out',
             }}>
             <path d="M12 3 L14.5 11 L12 9.5 L9.5 11 Z" fill="rgba(239,68,68,0.8)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />

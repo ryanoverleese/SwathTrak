@@ -95,7 +95,7 @@ function App() {
   ];
 
   const tiltEnabled = isSpraying && sprayView === 'tilted';
-  const compassRotation = tiltEnabled && !lockNorth && heading != null ? heading : 0;
+  const compassRotation = !lockNorth && heading != null ? heading : 0;
 
   // Restore active session on mount
   useEffect(() => {
@@ -352,7 +352,6 @@ function App() {
         gpsError={gpsError}
         lockNorth={lockNorth}
         compassRotation={compassRotation}
-        heading={heading}
         onSprayToggle={handleSprayToggle}
         onWidthChange={setSprayWidth}
         onRefill={handleRefill}
