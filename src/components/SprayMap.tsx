@@ -38,6 +38,8 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   const hasInitialZoom = useRef(false);
   const flatZoomRef = useRef(18);
   const wasTilted = useRef(false);
+  const tiltEnabledRef = useRef(false);
+  tiltEnabledRef.current = !!tiltEnabled;
   const [mapReady, setMapReady] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -203,10 +205,12 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
   }, [tiltEnabled, mapReady]);
 
   // Compass heading → map bearing (while tilted)
-  // Combines center + bearing into a single easeTo so position + rotation happen atomically
+  // Uses tiltEnabledRef instead of tiltEnabled in deps so this effect does NOT fire
+  // when tilt starts — the tilt effect above already sets the initial bearing.
+  // This only fires on subsequent heading/lockNorth changes.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !tiltEnabled) return;
+    if (!map || !mapReady || !tiltEnabledRef.current) return;
 
     if (lockNorth) {
       map.easeTo({ bearing: 0, duration: 300 });
@@ -224,7 +228,7 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       }
       map.easeTo(opts);
     }
-  }, [heading, lockNorth, tiltEnabled, mapReady]);
+  }, [heading, lockNorth, mapReady]);
 
   // Update position marker and center map
   useEffect(() => {
