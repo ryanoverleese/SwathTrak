@@ -4,20 +4,14 @@
 
 /* Full-screen map app — extends behind notch/Dynamic Island */
 .app {
-  width: 100%;
-  height: 100%;
-  position: relative;
   overflow: hidden;
 }
 
 
 /* ========== Map Container ========== */
 .map-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  inset: 0;
 }
 
 
@@ -67,11 +61,8 @@
 
 /* ========== Controls overlay ========== */
 .controls {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed;
+  inset: 0;
   pointer-events: none;
   z-index: 1000;
   display: flex;
@@ -684,11 +675,8 @@ input[type="number"] {
 
 /* ========== Overlays — Glass Panels ========== */
 .summary-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed;
+  inset: 0;
   z-index: 2000;
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(4px);
@@ -970,11 +958,8 @@ input[type="number"] {
 
 /* ========== Session List — Glass Bottom Sheet ========== */
 .session-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed;
+  inset: 0;
   z-index: 2000;
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(4px);
