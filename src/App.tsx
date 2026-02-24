@@ -94,7 +94,7 @@ function App() {
     ...currentTankSwaths,
   ];
 
-  const tiltEnabled = isSpraying && sprayView === 'tilted';
+  const tiltEnabled = sprayView === 'tilted';
   const compassRotation = tiltEnabled && !lockNorth && heading != null ? heading : 0;
 
   // Restore active session on mount
