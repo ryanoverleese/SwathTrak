@@ -64,7 +64,7 @@ export function Controls({
           </span>
         </div>
 
-        {!isSpraying && totalAcres > 0 && (
+        {!isSpraying && totalAcres > 0 ? (
           <div className="top-bar-actions">
             <button className="refill-btn" onClick={onRefill}>
               Refill
@@ -73,6 +73,8 @@ export function Controls({
               Finish
             </button>
           </div>
+        ) : (
+          <div style={{ width: 44 }} />
         )}
       </div>
 
