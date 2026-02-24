@@ -19,11 +19,18 @@ interface ControlsProps {
   tankNumber: number;
   gpsAccuracy: number | null;
   gpsError: string | null;
+  lockNorth: boolean;
+  compassRotation: number;
+  heading: number | null;
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
   onRefill: () => void;
   onEndSession: () => void;
   onOpenSessions: () => void;
+  onOpenSettings: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onToggleLockNorth: () => void;
 }
 
 export function Controls({
@@ -33,11 +40,18 @@ export function Controls({
   tankNumber,
   gpsAccuracy,
   gpsError,
+  lockNorth,
+  compassRotation,
+  heading,
   onSprayToggle,
   onWidthChange,
   onRefill,
   onEndSession,
   onOpenSessions,
+  onOpenSettings,
+  onZoomIn,
+  onZoomOut,
+  onToggleLockNorth,
 }: ControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
@@ -46,12 +60,6 @@ export function Controls({
     <div className="controls">
       {/* Top bar - stats */}
       <div className="top-bar">
-        <button className="icon-btn" onClick={onOpenSessions} title="Sessions">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 12h18M3 6h18M3 18h18" />
-          </svg>
-        </button>
-
         <div className="stats">
           <span key={areaTap} className="stat tappable" onClick={cycleArea}>
             {formatArea(totalAcres, areaUnit)}
@@ -64,7 +72,7 @@ export function Controls({
           </span>
         </div>
 
-        {!isSpraying && totalAcres > 0 ? (
+        {!isSpraying && totalAcres > 0 && (
           <div className="top-bar-actions">
             <button className="refill-btn" onClick={onRefill}>
               Refill
@@ -73,8 +81,6 @@ export function Controls({
               Finish
             </button>
           </div>
-        ) : (
-          <div style={{ width: 44 }} />
         )}
       </div>
 
@@ -103,9 +109,55 @@ export function Controls({
             value={widthToSlider(sprayWidth)}
             onChange={(e) => onWidthChange(sliderToWidth(Number(e.target.value)))}
           />
-
         </div>
       )}
+
+      {/* Bottom-right thumb action cluster */}
+      <div className="thumb-actions">
+        <button className="zoom-btn" onClick={onZoomIn}>
+          <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="6" x2="12" y2="18" /><line x1="6" y1="12" x2="18" y2="12" />
+          </svg>
+        </button>
+        <button className="zoom-btn" onClick={onZoomOut}>
+          <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="6" y1="12" x2="18" y2="12" />
+          </svg>
+        </button>
+        <button
+          className={`zoom-btn compass-btn${lockNorth ? ' compass-locked' : ''}`}
+          onClick={onToggleLockNorth}
+        >
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+            style={{
+              transform: `rotate(${lockNorth && heading != null ? -heading : compassRotation}deg)`,
+              transition: 'transform 0.3s ease-out',
+            }}>
+            <path d="M12 3 L14.5 11 L12 9.5 L9.5 11 Z" fill="rgba(239,68,68,0.8)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
+            <path d="M12 21 L9.5 13 L12 14.5 L14.5 13 Z" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
+            <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.6)" />
+          </svg>
+        </button>
+        {!isSpraying && (
+          <>
+            <button className="zoom-btn" onClick={onOpenSessions} title="Sessions">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                <path d="M14 2v6h6" />
+                <path d="M16 13H8" />
+                <path d="M16 17H8" />
+                <path d="M10 9H8" />
+              </svg>
+            </button>
+            <button className="zoom-btn" onClick={onOpenSettings} title="Settings">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Bottom actions */}
       {isSpraying ? (

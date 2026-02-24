@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { SprayMap } from './components/SprayMap';
+import type { SprayMapHandle } from './components/SprayMap';
 import { Controls } from './components/Controls';
 import { SessionList } from './components/SessionList';
 import { SessionSummary } from './components/SessionSummary';
@@ -63,18 +64,22 @@ function App() {
     const saved = loadActiveSession();
     return saved ? saved.id : generateId();
   });
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuView, setMenuView] = useState<'menu' | 'sessions' | 'howto'>('menu');
+  const [showSessions, setShowSessions] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
+  const [lockNorth, setLockNorth] = useState(false);
 
   // Modals
   const [showSummary, setShowSummary] = useState(false);
   const [showTankSummary, setShowTankSummary] = useState(false);
   const [finishedTanks, setFinishedTanks] = useState<Tank[]>([]);
+  const [showHowTo, setShowHowTo] = useState(false);
 
   const activeSwathRef = useRef(activeSwath);
   activeSwathRef.current = activeSwath;
+
+  const mapRef = useRef<SprayMapHandle>(null);
 
   // GPS is always active so we can show position on map
   const { position, error: gpsError, accuracy: gpsAccuracy } = useGps(true);
@@ -89,13 +94,14 @@ function App() {
     ...currentTankSwaths,
   ];
 
+  const tiltEnabled = isSpraying && sprayView === 'tilted';
+  const compassRotation = tiltEnabled && !lockNorth && heading != null ? heading : 0;
+
   // Restore active session on mount
   useEffect(() => {
     const saved = loadActiveSession();
     if (saved) {
       setTanks(saved.tanks || []);
-      // If there were tanks, the "current" swaths are empty (user needs to start a new tank)
-      // If it's a migrated session, the first tank's swaths become the current tank swaths
       if (saved.tanks.length === 0 && saved.swaths && saved.swaths.length > 0) {
         setCurrentTankSwaths(saved.swaths);
       }
@@ -187,7 +193,6 @@ function App() {
   const handleRefill = useCallback(() => {
     const swaths = finalizeCurrentTankSwaths();
     if (swaths.length === 0) return;
-    // Stash swaths temporarily — TankSummary will let user input gallons
     setCurrentTankSwaths(swaths);
     setShowTankSummary(true);
   }, [isSpraying, currentTankSwaths]);
@@ -207,7 +212,6 @@ function App() {
   }, [currentTankSwaths, currentTankStart]);
 
   const handleTankCancel = useCallback(() => {
-    // Just close the modal, keep swaths in current tank
     setShowTankSummary(false);
   }, []);
 
@@ -215,7 +219,6 @@ function App() {
   const handleFinish = useCallback(() => {
     const swaths = finalizeCurrentTankSwaths();
 
-    // Build the full list of tanks including the current one
     let allTanks = [...tanks];
     if (swaths.length > 0) {
       allTanks.push({
@@ -233,7 +236,6 @@ function App() {
   }, [isSpraying, currentTankSwaths, tanks, currentTankStart]);
 
   const handleSaveSummary = useCallback((name: string, gallonsPerTank: (number | undefined)[]) => {
-    // Apply per-tank gallons
     const tanksWithGallons = finishedTanks.map((t, i) => ({
       ...t,
       gallons: gallonsPerTank[i] ?? t.gallons,
@@ -264,8 +266,6 @@ function App() {
   }, [sessionId, finishedTanks]);
 
   const handleCancelSummary = useCallback(() => {
-    // Put tanks back so the user can keep going
-    // The last tank in finishedTanks becomes the current tank again
     const lastTank = finishedTanks[finishedTanks.length - 1];
     const previousTanks = finishedTanks.slice(0, -1);
     setTanks(previousTanks);
@@ -278,7 +278,7 @@ function App() {
   const handleLoadSession = useCallback((session: SpraySession) => {
     const swaths = session.tanks.flatMap((t) => t.swaths);
     setPastSessionSwaths(swaths);
-    setShowMenu(false);
+    setShowSessions(false);
   }, []);
 
   const handleResumeSession = useCallback((session: SpraySession) => {
@@ -295,7 +295,7 @@ function App() {
 
     deleteSession(session.id);
     setSessions(loadSessions());
-    setShowMenu(false);
+    setShowSessions(false);
   }, [isSpraying]);
 
   const handleRenameSession = useCallback((id: string, name: string) => {
@@ -333,13 +333,15 @@ function App() {
     <UnitSystemContext.Provider value={unitSystem}>
     <div className="app">
       <SprayMap
+        ref={mapRef}
         position={position}
         swaths={allSwaths}
         activeSwath={activeSwath}
         pastSessionSwaths={pastSessionSwaths}
         isSpraying={isSpraying}
-        tiltEnabled={isSpraying && sprayView === 'tilted'}
+        tiltEnabled={tiltEnabled}
         heading={heading}
+        lockNorth={lockNorth}
       />
       <Controls
         isSpraying={isSpraying}
@@ -348,15 +350,21 @@ function App() {
         tankNumber={tankNumber}
         gpsAccuracy={gpsAccuracy}
         gpsError={gpsError}
+        lockNorth={lockNorth}
+        compassRotation={compassRotation}
+        heading={heading}
         onSprayToggle={handleSprayToggle}
         onWidthChange={setSprayWidth}
         onRefill={handleRefill}
         onEndSession={handleFinish}
         onOpenSessions={() => {
           setSessions(loadSessions());
-          setMenuView('menu');
-          setShowMenu(true);
+          setShowSessions(true);
         }}
+        onOpenSettings={() => setShowSettings(true)}
+        onZoomIn={() => mapRef.current?.zoomIn()}
+        onZoomOut={() => mapRef.current?.zoomOut()}
+        onToggleLockNorth={() => setLockNorth((v) => !v)}
       />
       {showTankSummary && (
         <TankSummary
@@ -375,50 +383,25 @@ function App() {
           onDeleteJob={handleCancelJob}
         />
       )}
-      {showMenu && menuView === 'menu' && (
-        <div className="session-overlay">
-          <div className="session-panel menu-panel">
+      {showSessions && (
+        <SessionList
+          sessions={sessions}
+          onLoad={handleLoadSession}
+          onResume={handleResumeSession}
+          onRename={handleRenameSession}
+          onDelete={handleDeleteSession}
+          onClose={() => setShowSessions(false)}
+          onBack={() => setShowSessions(false)}
+        />
+      )}
+      {showSettings && (
+        <div className="session-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
+          <div className="session-panel settings-sheet">
             <div className="session-header">
-              <h2>Menu</h2>
-              <button className="close-btn" onClick={() => setShowMenu(false)}>✕</button>
+              <h2>Settings</h2>
+              <button className="close-btn" onClick={() => setShowSettings(false)}>✕</button>
             </div>
-            <div className="menu-options">
-              <button className="menu-option" onClick={() => setMenuView('sessions')}>
-                <div className="menu-option-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
-                    <path d="M14 2v6h6" />
-                    <path d="M16 13H8" />
-                    <path d="M16 17H8" />
-                    <path d="M10 9H8" />
-                  </svg>
-                </div>
-                <div className="menu-option-text">
-                  <span className="menu-option-title">Sessions</span>
-                  <span className="menu-option-sub">{sessions.length} saved</span>
-                </div>
-                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-              <button className="menu-option" onClick={() => setMenuView('howto')}>
-                <div className="menu-option-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                    <path d="M12 17h.01" />
-                  </svg>
-                </div>
-                <div className="menu-option-text">
-                  <span className="menu-option-title">How To Use</span>
-                  <span className="menu-option-sub">Step-by-step guide</span>
-                </div>
-                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18l6-6-6-6" />
-                </svg>
-              </button>
-            </div>
-            <div className="menu-unit-toggle">
+            <div className="menu-unit-toggle" style={{ marginTop: 0 }}>
               <span className="menu-unit-label">Units</span>
               <div className="menu-unit-segmented">
                 <button
@@ -452,6 +435,24 @@ function App() {
                 </button>
               </div>
             </div>
+            <div className="menu-options" style={{ marginTop: 16 }}>
+              <button className="menu-option" onClick={() => { setShowSettings(false); setShowHowTo(true); }}>
+                <div className="menu-option-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <path d="M12 17h.01" />
+                  </svg>
+                </div>
+                <div className="menu-option-text">
+                  <span className="menu-option-title">How To Use</span>
+                  <span className="menu-option-sub">Step-by-step guide</span>
+                </div>
+                <svg className="menu-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+            </div>
             <a className="menu-support" href="mailto:support@swathtrak.com">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="20" height="16" x="2" y="4" rx="2" />
@@ -462,21 +463,10 @@ function App() {
           </div>
         </div>
       )}
-      {showMenu && menuView === 'sessions' && (
-        <SessionList
-          sessions={sessions}
-          onLoad={handleLoadSession}
-          onResume={handleResumeSession}
-          onRename={handleRenameSession}
-          onDelete={handleDeleteSession}
-          onClose={() => setShowMenu(false)}
-          onBack={() => setMenuView('menu')}
-        />
-      )}
-      {showMenu && menuView === 'howto' && (
+      {showHowTo && (
         <HowTo
-          onClose={() => setShowMenu(false)}
-          onBack={() => setMenuView('menu')}
+          onClose={() => setShowHowTo(false)}
+          onBack={() => { setShowHowTo(false); setShowSettings(true); }}
         />
       )}
     </div>

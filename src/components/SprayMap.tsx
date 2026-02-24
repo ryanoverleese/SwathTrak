@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GpsPoint, SpraySwath } from '../types';
@@ -12,6 +12,12 @@ interface SprayMapProps {
   isSpraying?: boolean;
   tiltEnabled?: boolean;
   heading?: number | null;
+  lockNorth?: boolean;
+}
+
+export interface SprayMapHandle {
+  zoomIn: () => void;
+  zoomOut: () => void;
 }
 
 const EMPTY_FC: GeoJSON.FeatureCollection = {
@@ -19,15 +25,25 @@ const EMPTY_FC: GeoJSON.FeatureCollection = {
   features: [],
 };
 
-const TILT_ZOOM_OUT = 1.5;
+const NAV_PITCH = 60;
+const NAV_ZOOM = 19;
+const NAV_PADDING_BOTTOM = 250;
 
-export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isSpraying, tiltEnabled, heading }: SprayMapProps) {
+export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function SprayMap(
+  { position, swaths, activeSwath, pastSessionSwaths, isSpraying, tiltEnabled, heading, lockNorth },
+  ref
+) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const hasInitialZoom = useRef(false);
   const flatZoomRef = useRef(18);
   const wasTilted = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => mapRef.current?.zoomIn(),
+    zoomOut: () => mapRef.current?.zoomOut(),
+  }));
 
   // Initialize map
   useEffect(() => {
@@ -153,62 +169,61 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     };
   }, []);
 
-  // Handle tilt transition
+  // Handle tilt transition — CarPlay-style navigation view
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !hasInitialZoom.current) return;
 
     if (tiltEnabled && !wasTilted.current) {
-      // Starting tilt — save current zoom then zoom out + pitch
+      // Starting tilt — save current zoom, swoop to nav view
+      // Combine pitch + bearing + zoom + center into single easeTo to prevent animation conflicts
       flatZoomRef.current = map.getZoom();
+      const center = position
+        ? [position.lng, position.lat] as [number, number]
+        : undefined;
       map.easeTo({
-        pitch: 45,
-        zoom: flatZoomRef.current - TILT_ZOOM_OUT,
-        duration: 600,
+        pitch: NAV_PITCH,
+        zoom: NAV_ZOOM,
+        bearing: lockNorth ? 0 : -(heading ?? 0),
+        ...(center ? { center } : {}),
+        duration: 800,
       });
+      map.setPadding({ top: 0, left: 0, right: 0, bottom: NAV_PADDING_BOTTOM });
     } else if (!tiltEnabled && wasTilted.current) {
       // Stopped tilt — flatten + restore zoom
       map.easeTo({
         pitch: 0,
         bearing: 0,
         zoom: flatZoomRef.current,
-        duration: 600,
+        duration: 800,
       });
+      map.setPadding({ top: 0, left: 0, right: 0, bottom: 0 });
     }
     wasTilted.current = !!tiltEnabled;
   }, [tiltEnabled, mapReady]);
 
-  // Compass heading → map bearing
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !tiltEnabled) return;
-
-    if (heading !== null && heading !== undefined) {
-      map.easeTo({
-        bearing: -heading,
-        duration: 300,
-      });
-    }
-  }, [heading, tiltEnabled, mapReady]);
-
-  // Lock north resets bearing
-  const [lockNorth, setLockNorth] = useState(false);
+  // Compass heading → map bearing (while tilted)
+  // Combines center + bearing into a single easeTo so position + rotation happen atomically
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !tiltEnabled) return;
 
     if (lockNorth) {
       map.easeTo({ bearing: 0, duration: 300 });
+      return;
     }
-  }, [lockNorth, tiltEnabled, mapReady]);
 
-  // Override compass heading when lockNorth
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !tiltEnabled || !lockNorth) return;
-
-    // When locked north, keep bearing at 0 regardless of heading
-    map.easeTo({ bearing: 0, duration: 300 });
+    if (heading !== null && heading !== undefined) {
+      const opts: maplibregl.EaseToOptions = {
+        bearing: -heading,
+        duration: 300,
+      };
+      // Include center so position + rotation are atomic
+      if (position) {
+        opts.center = [position.lng, position.lat];
+      }
+      map.easeTo(opts);
+    }
   }, [heading, lockNorth, tiltEnabled, mapReady]);
 
   // Update position marker and center map
@@ -231,13 +246,14 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     if (!hasInitialZoom.current) {
       map.jumpTo({ center: [position.lng, position.lat], zoom: 18 });
       hasInitialZoom.current = true;
-    } else if (isSpraying) {
+    } else if (isSpraying && !tiltEnabled) {
+      // Only pan from here when NOT tilted — tilted view handles centering in the bearing effect
       map.easeTo({
         center: [position.lng, position.lat],
         duration: 500,
       });
     }
-  }, [position, isSpraying, mapReady]);
+  }, [position, isSpraying, tiltEnabled, mapReady]);
 
   // Render current session swaths
   useEffect(() => {
@@ -291,49 +307,5 @@ export function SprayMap({ position, swaths, activeSwath, pastSessionSwaths, isS
     });
   }, [pastSessionSwaths, mapReady]);
 
-  const handleZoomIn = useCallback(() => {
-    mapRef.current?.zoomIn();
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    mapRef.current?.zoomOut();
-  }, []);
-
-  // Compute compass icon rotation for the UI button
-  const compassRotation = tiltEnabled && !lockNorth && heading != null ? heading : 0;
-
-  return (
-    <>
-      <div className="map-container" ref={mapContainer} />
-      <div className="zoom-controls">
-        <button className="zoom-btn" onClick={handleZoomIn}>
-          <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="6" x2="12" y2="18" /><line x1="6" y1="12" x2="18" y2="12" />
-          </svg>
-        </button>
-        <button className="zoom-btn" onClick={handleZoomOut}>
-          <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="6" y1="12" x2="18" y2="12" />
-          </svg>
-        </button>
-        <button
-          className={`zoom-btn compass-btn${lockNorth ? ' compass-locked' : ''}`}
-          onClick={() => setLockNorth(!lockNorth)}
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
-            style={{
-              transform: `rotate(${lockNorth && heading != null ? -heading : compassRotation}deg)`,
-              transition: 'transform 0.3s ease-out',
-            }}>
-            {/* North triangle */}
-            <path d="M12 3 L14.5 11 L12 9.5 L9.5 11 Z" fill="rgba(239,68,68,0.8)" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
-            {/* South triangle */}
-            <path d="M12 21 L9.5 13 L12 14.5 L14.5 13 Z" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
-            {/* Center dot */}
-            <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.6)" />
-          </svg>
-        </button>
-      </div>
-    </>
-  );
-}
+  return <div className="map-container" ref={mapContainer} />;
+});
