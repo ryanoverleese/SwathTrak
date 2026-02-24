@@ -22,6 +22,7 @@ interface ControlsProps {
   lockNorth: boolean;
   compassRotation: number;
   heading: number | null;
+  sprayView: 'tilted' | 'overhead';
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
   onRefill: () => void;
@@ -31,6 +32,7 @@ interface ControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onToggleLockNorth: () => void;
+  onToggleSprayView: () => void;
 }
 
 export function Controls({
@@ -43,6 +45,7 @@ export function Controls({
   lockNorth,
   compassRotation,
   heading,
+  sprayView,
   onSprayToggle,
   onWidthChange,
   onRefill,
@@ -52,6 +55,7 @@ export function Controls({
   onZoomIn,
   onZoomOut,
   onToggleLockNorth,
+  onToggleSprayView,
 }: ControlsProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
@@ -137,6 +141,23 @@ export function Controls({
             <path d="M12 21 L9.5 13 L12 14.5 L14.5 13 Z" fill="rgba(255,255,255,0.35)" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
             <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.6)" />
           </svg>
+        </button>
+        <button
+          className={`zoom-btn${sprayView === 'tilted' ? ' compass-locked' : ''}`}
+          onClick={onToggleSprayView}
+          title={sprayView === 'tilted' ? 'Switch to overhead' : 'Switch to tilted'}
+        >
+          {sprayView === 'tilted' ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 20L12 4l10 16" />
+              <path d="M6 16h12" />
+            </svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
         </button>
         {!isSpraying && (
           <>

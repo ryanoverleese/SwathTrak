@@ -362,9 +362,15 @@ function App() {
           setShowSessions(true);
         }}
         onOpenSettings={() => setShowSettings(true)}
+        sprayView={sprayView}
         onZoomIn={() => mapRef.current?.zoomIn()}
         onZoomOut={() => mapRef.current?.zoomOut()}
         onToggleLockNorth={() => setLockNorth((v) => !v)}
+        onToggleSprayView={() => {
+          const next = sprayView === 'tilted' ? 'overhead' : 'tilted';
+          setSprayView(next);
+          localStorage.setItem('swathtrak_spray_view', next);
+        }}
       />
       {showTankSummary && (
         <TankSummary
@@ -416,23 +422,6 @@ function App() {
                   onClick={() => handleUnitSystem('metric')}
                 >
                   Metric
-                </button>
-              </div>
-            </div>
-            <div className="menu-unit-toggle">
-              <span className="menu-unit-label">Spray View</span>
-              <div className="menu-unit-segmented">
-                <button
-                  className={`menu-unit-btn${sprayView === 'tilted' ? ' active' : ''}`}
-                  onClick={() => { setSprayView('tilted'); localStorage.setItem('swathtrak_spray_view', 'tilted'); }}
-                >
-                  Tilted
-                </button>
-                <button
-                  className={`menu-unit-btn${sprayView === 'overhead' ? ' active' : ''}`}
-                  onClick={() => { setSprayView('overhead'); localStorage.setItem('swathtrak_spray_view', 'overhead'); }}
-                >
-                  Overhead
                 </button>
               </div>
             </div>
