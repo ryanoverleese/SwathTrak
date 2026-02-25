@@ -37,14 +37,19 @@ export function useGps(active: boolean) {
 
     async function startWatch() {
       try {
-        // Request permissions first (Capacitor handles native prompts)
-        const perm = await Geolocation.requestPermissions();
-        if (perm.location === 'denied') {
-          setState((s) => ({ ...s, error: 'Location permission denied' }));
-          return;
+        // Only request permissions through Capacitor on native platforms.
+        // In a browser/PWA, the browser handles its own permission prompt
+        // via watchPosition, and Capacitor's requestPermissions() falsely
+        // reports 'denied'.
+        if ((window as any).Capacitor?.isNativePlatform()) {
+          const perm = await Geolocation.requestPermissions();
+          if (perm.location === 'denied') {
+            setState((s) => ({ ...s, error: 'Location permission denied' }));
+            return;
+          }
         }
       } catch {
-        // Browser environment may not support requestPermissions - continue anyway
+        // Continue to watchPosition which will trigger the browser prompt
       }
 
       try {
