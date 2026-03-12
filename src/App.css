@@ -343,7 +343,7 @@ input[type="number"] {
   align-items: center;
   gap: 12px;
   padding: 20px;
-  padding-bottom: max(36px, env(safe-area-inset-bottom));
+  padding-bottom: calc(36px + env(safe-area-inset-bottom, 34px));
 }
 
 .spray-btn {
@@ -388,7 +388,7 @@ input[type="number"] {
   display: flex;
   gap: 10px;
   padding: 20px 16px;
-  padding-bottom: max(36px, env(safe-area-inset-bottom));
+  padding-bottom: calc(36px + env(safe-area-inset-bottom, 34px));
 }
 
 .stop-action-btn {
