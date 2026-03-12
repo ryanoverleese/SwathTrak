@@ -4,9 +4,11 @@
 
 /* Full-screen map app — extends behind notch/Dynamic Island */
 .app {
-  width: 100vw;
-  height: 100%;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
 }
 
