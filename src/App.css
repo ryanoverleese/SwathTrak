@@ -393,15 +393,6 @@ input[type="number"] {
     0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.spray-btn--resume {
-  background: rgba(40, 210, 100, 0.38);
-  border-color: rgba(100, 240, 150, 0.65);
-  box-shadow:
-    0 1px 0 rgba(160, 255, 200, 0.5) inset,
-    0 -4px 12px rgba(50, 210, 100, 0.15) inset,
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    0 2px 8px rgba(0, 0, 0, 0.08);
-}
 
 /* ========== Stop Action Buttons — Tinted Glass ========== */
 .stop-actions {

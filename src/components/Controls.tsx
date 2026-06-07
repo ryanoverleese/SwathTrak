@@ -14,7 +14,6 @@ function widthToSlider(width: number): number {
 
 interface ControlsProps {
   isSpraying: boolean;
-  isPaused: boolean;
   sprayWidth: number;
   totalAcres: number;
   tankNumber: number;
@@ -37,7 +36,6 @@ interface ControlsProps {
 
 export function Controls({
   isSpraying,
-  isPaused,
   sprayWidth,
   totalAcres,
   tankNumber,
@@ -76,7 +74,7 @@ export function Controls({
           </span>
         </div>
 
-        {!isSpraying && !isPaused && totalAcres > 0 && (
+        {!isSpraying && totalAcres > 0 && (
           <div className="top-bar-actions">
             <button className="refill-btn" onClick={onRefill}>
               Refill
@@ -142,7 +140,7 @@ export function Controls({
             <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.6)" />
           </svg>
         </button>
-        {(isSpraying || isPaused) && (
+        {isSpraying && (
           <button
             className={`zoom-btn${sprayView === 'tilted' ? ' compass-locked' : ''}`}
             onClick={onToggleSprayView}
@@ -161,7 +159,7 @@ export function Controls({
             )}
           </button>
         )}
-        {!isSpraying && !isPaused && (
+        {!isSpraying && (
           <>
             <button className="zoom-btn" onClick={onOpenSessions} title="Sessions">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -183,7 +181,7 @@ export function Controls({
       </div>
 
       {/* Bottom actions */}
-      {(isSpraying || isPaused) ? (
+      {isSpraying ? (
         <div className="spray-btn-container">
           <div style={{ display: 'flex', gap: 10, width: '100%' }}>
             <button className="stop-action-btn stop-end" onClick={onEndSession}>
@@ -193,11 +191,8 @@ export function Controls({
               Stop & Refill
             </button>
           </div>
-          <button
-            className={`spray-btn ${isPaused ? 'spray-btn--resume' : 'spray-btn--pause'}`}
-            onClick={onSprayToggle}
-          >
-            {isSpraying ? 'PAUSE' : 'RESUME'}
+          <button className="spray-btn spray-btn--pause" onClick={onSprayToggle}>
+            PAUSE
           </button>
         </div>
       ) : (
