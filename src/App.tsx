@@ -150,18 +150,13 @@ function App() {
 
   const handleSprayToggle = useCallback(() => {
     if (isSpraying) {
-      // Stop spraying - save the active swath to current tank
-      if (activeSwathRef.current && activeSwathRef.current.points.length >= 2) {
-        const finished: SpraySwath = {
-          ...activeSwathRef.current,
-          endTime: Date.now(),
-        };
-        setCurrentTankSwaths((prev) => [...prev, finished]);
-      }
-      setActiveSwath(null);
+      // Pause — stop recording but keep activeSwath in memory
       setIsSpraying(false);
+    } else if (activeSwathRef.current) {
+      // Resume — continue appending to the existing swath
+      setIsSpraying(true);
     } else {
-      // Start spraying
+      // Start — create a new swath
       const newSwath: SpraySwath = {
         id: generateId(),
         points: position ? [position] : [],
@@ -174,10 +169,10 @@ function App() {
     }
   }, [isSpraying, position, sprayWidth, tankNumber]);
 
-  /** Finalize the current tank's swaths (stopping spray if active) */
+  /** Finalize the current tank's swaths (stopping spray if active or paused) */
   function finalizeCurrentTankSwaths(): SpraySwath[] {
     let swaths = currentTankSwaths;
-    if (isSpraying && activeSwathRef.current) {
+    if (activeSwathRef.current && activeSwathRef.current.points.length >= 2) {
       const finished: SpraySwath = {
         ...activeSwathRef.current,
         endTime: Date.now(),
@@ -322,6 +317,7 @@ function App() {
     clearActiveSession();
   }, []);
 
+  const isPaused = !isSpraying && activeSwath !== null;
   const totalAcres = calculateTotalAcres(allSwaths, activeSwath);
 
   function handleUnitSystem(system: UnitSystem) {
@@ -345,6 +341,7 @@ function App() {
       />
       <Controls
         isSpraying={isSpraying}
+        isPaused={isPaused}
         sprayWidth={sprayWidth}
         totalAcres={totalAcres}
         tankNumber={tankNumber}
