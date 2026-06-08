@@ -120,6 +120,23 @@ function App() {
     saveActiveSession(session);
   }, [tanks, currentTankSwaths, activeSwath, sessionId]);
 
+  // Keep screen awake while spraying so GPS doesn't pause when the display sleeps
+  useEffect(() => {
+    if (!isSpraying || !('wakeLock' in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const acquire = async () => {
+      try { lock = await navigator.wakeLock.request('screen'); } catch { /* not supported */ }
+    };
+    // Re-acquire if the system releases the lock (e.g. tab hidden then visible)
+    const onVisible = () => { if (document.visibilityState === 'visible') acquire(); };
+    acquire();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      lock?.release();
+    };
+  }, [isSpraying]);
+
   // Record GPS points while spraying
   useEffect(() => {
     if (!isSpraying || !position || !activeSwathRef.current) return;
@@ -130,9 +147,13 @@ function App() {
     // Only add point if we've moved at least 3 feet (reduce noise)
     if (lastPoint && distanceFeet(lastPoint, position) < 3) return;
 
-    // Reject GPS outliers: if speed between points exceeds 60 mph, skip it
+    // Reject GPS outliers: skip points that arrive after a long gap (phone may have
+    // been sleeping and the first fix after wake is often stale or jumps to start)
     if (lastPoint && lastPoint.timestamp && position.timestamp) {
       const elapsedSec = (position.timestamp - lastPoint.timestamp) / 1000;
+      // If more than 8 seconds passed, discard — GPS was likely paused
+      if (elapsedSec > 8) return;
+      // Also reject if implied speed exceeds 60 mph
       if (elapsedSec > 0) {
         const feet = distanceFeet(lastPoint, position);
         const mph = (feet / elapsedSec) * 0.6818;
