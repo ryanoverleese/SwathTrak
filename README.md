@@ -52,11 +52,48 @@ npx cap open ios       # Opens Xcode
 
 ### iOS
 
-1. `npx cap open ios`
-2. In Xcode, set your signing team and run on your device
-3. You'll need to add these to `Info.plist` (Capacitor does this automatically):
-   - `NSLocationWhenInUseUsageDescription`
-   - `NSLocationAlwaysUsageDescription`
+The native `ios/` project is generated locally and git-ignored; it is not present
+in this repository. `capacitor.config.ts` configures the wrapper, but does not
+set architecture requirements or location permission strings.
+
+On a Mac with Node.js 22 or later and Xcode:
+
+1. Run `npm install`, `npm run build`, then `npx cap sync ios` to install the
+   native keep-awake plugin and copy web assets. If the native project does not
+   exist yet, first run `npx cap add ios`.
+2. In `ios/App/App/Info.plist`, ensure `UIRequiredDeviceCapabilities` contains
+   `arm64`, replacing `armv7` if present. In `ios/App/App.xcodeproj/project.pbxproj`
+   (or Xcode Build Settings), check all device build configurations for legacy
+   `armv7` architecture overrides. Use the standard architectures setting
+   (`$(ARCHS_STANDARD)`, arm64 for current iOS devices); do not exclude arm64 for
+   device builds. Do not change signing or team settings for these fixes.
+3. Add or update these location descriptions in `ios/App/App/Info.plist` (they
+   are not populated automatically by this repo):
+
+   ```xml
+   <key>NSLocationWhenInUseUsageDescription</key>
+   <string>SwathTrak uses your precise location to show your position and record sprayer coverage while you spray.</string>
+   <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+   <string>SwathTrak uses your precise location to show your position and record sprayer coverage while you spray.</string>
+   ```
+
+   The installed Capacitor Geolocation plugin requires the second key because
+   of its iOS dependency, even though the app does not request Always access.
+   The obsolete `NSLocationAlwaysUsageDescription` key is not needed for this
+   app's current iOS target.
+4. Run `npx cap open ios` and verify on an iPhone: spraying prevents automatic
+   screen lock; Stop, Refill, Finish, and Cancel allow normal screen sleep again.
+   Check the imagery credits are readable and location permission wording is shown.
+
+No background-location plugin or background mode is configured in the available
+source. The standard Geolocation plugin does not directly support background
+tracking. Keep-awake prevents automatic screen sleep while spraying; manually
+locking the device or switching apps can still interrupt GPS. Do not enable
+Background Modes / Location updates for this foreground workflow.
+
+Host `docs/privacy-policy.html` at a public HTTPS URL and use that URL in App
+Store Connect. The policy uses the existing in-app contact, support@swathtrak.com;
+verify that mailbox receives mail before submission.
 
 ## Quick Browser Test
 
@@ -66,4 +103,4 @@ You can also just open it in your phone's browser:
 npm run dev -- --host
 ```
 
-Then open the URL on your phone. GPS works in the browser too, though the native wrapper provides better background GPS access.
+Then open the URL on your phone. GPS works in the browser too, keep the app visible while recording coverage.

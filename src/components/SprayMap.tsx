@@ -55,20 +55,21 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       style: {
         version: 8,
         sources: {
-          'google-satellite': {
+          'esri-satellite': {
             type: 'raster',
             tiles: [
-              'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+              'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             ],
             tileSize: 256,
-            maxzoom: 20,
+            maxzoom: 19,
+            attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
           },
         },
         layers: [
           {
             id: 'satellite',
             type: 'raster',
-            source: 'google-satellite',
+            source: 'esri-satellite',
           },
         ],
       },
@@ -76,6 +77,8 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
       zoom: 5,
       attributionControl: false,
     });
+
+    map.addControl(new maplibregl.AttributionControl({ compact: false }), 'top-left');
 
     map.on('load', () => {
       // Past session swaths (blue, rendered first / below)

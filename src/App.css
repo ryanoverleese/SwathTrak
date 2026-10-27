@@ -1423,3 +1423,14 @@ input[type="number"] {
   line-height: 1.4;
 }
 
+
+/* Keep imagery credits visible below the top bar, clear of spray controls. */
+.map-container .maplibregl-ctrl-top-left {
+  top: calc(76px + env(safe-area-inset-top, 0px));
+  max-width: calc(100% - 20px);
+}
+
+.map-container .maplibregl-ctrl-attrib {
+  font: 10px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  max-width: 100%;
+}

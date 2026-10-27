@@ -6,6 +6,7 @@ import { SessionList } from './components/SessionList';
 import { SessionSummary } from './components/SessionSummary';
 import { TankSummary } from './components/TankSummary';
 import { HowTo } from './components/HowTo';
+import { useKeepAwake } from './hooks/useKeepAwake';
 import { useGps } from './hooks/useGps';
 import { useCompass } from './hooks/useCompass';
 import { buildSwathPolygon, calculateAcres, distanceFeet } from './utils/geo';
@@ -127,22 +128,7 @@ function App() {
     saveActiveSession(session);
   }, [tanks, currentTankSwaths, currentTankStart, activeSwath, sessionId]);
 
-  // Keep screen awake while spraying so GPS doesn't pause when the display sleeps
-  useEffect(() => {
-    if (!isSpraying || !('wakeLock' in navigator)) return;
-    let lock: WakeLockSentinel | null = null;
-    const acquire = async () => {
-      try { lock = await navigator.wakeLock.request('screen'); } catch { /* not supported */ }
-    };
-    // Re-acquire if the system releases the lock (e.g. tab hidden then visible)
-    const onVisible = () => { if (document.visibilityState === 'visible') acquire(); };
-    acquire();
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      lock?.release();
-    };
-  }, [isSpraying]);
+  useKeepAwake(isSpraying);
 
   // Record GPS points while spraying
   useEffect(() => {
