@@ -26,6 +26,8 @@ export interface SpraySession {
   name: string;
   date: string;
   tanks: Tank[];
+  /** Unfinished tank, stored separately from completed tanks. */
+  currentTank?: Tank;
   /** @deprecated kept for backward compat with old saved sessions */
   swaths?: SpraySwath[];
   totalAcres: number;

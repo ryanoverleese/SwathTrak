@@ -45,13 +45,20 @@ function tankAcres(swaths: SpraySwath[]): number {
 
 export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJob }: SessionSummaryProps) {
   const [name, setName] = useState(defaultName);
-  const [volInputs, setVolInputs] = useState<string[]>(
-    tanks.map((t) => (t.gallons != null ? String(t.gallons) : ''))
-  );
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
   const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
   const [distUnit, , distTap, , distCycle, selectDist] = useDistanceUnit();
   const [volUnit, , volTap, , volCycle, selectVol] = useVolumeUnit();
+  const [volInputs, setVolInputs] = useState<string[]>(() =>
+    tanks.map((t) => (t.gallons != null ? String(t.gallons / VOL_TO_GAL[volUnit]) : ''))
+  );
+  function changeVolumeUnit(unit: typeof volUnit) {
+    setVolInputs(prev => prev.map(value => {
+      const volume = parseFloat(value);
+      return isNaN(volume) ? value : String(volume * VOL_TO_GAL[volUnit] / VOL_TO_GAL[unit]);
+    }));
+    selectVol(unit);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
 
 
@@ -129,11 +136,11 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                     value={volUnit}
                     display={formatVolume(totalGallons, volUnit)}
                     options={volCycle}
-                    onSelect={(u) => selectVol(u as typeof volUnit)}
+                    onSelect={(u) => changeVolumeUnit(u as typeof volUnit)}
                     tapKey={volTap}
                   />
                 ) : (
-                  <span key={volTap} className="summary-value tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                  <span key={volTap} className="summary-value tappable" onClick={() => changeVolumeUnit(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
                     {formatVolume(totalGallons, volUnit)}
                   </span>
                 )}
@@ -178,12 +185,12 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                   value={volUnit}
                   display={volUnit}
                   options={volCycle}
-                  onSelect={(u) => selectVol(u as typeof volUnit)}
+                  onSelect={(u) => changeVolumeUnit(u as typeof volUnit)}
                   triggerClass="calc-unit tappable"
                   tapKey={volTap}
                 />
               ) : (
-                <span key={volTap} className="calc-unit tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                <span key={volTap} className="calc-unit tappable" onClick={() => changeVolumeUnit(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
                   {volUnit}
                 </span>
               )}
@@ -220,12 +227,12 @@ export function SessionSummary({ defaultName, tanks, onSave, onCancel, onDeleteJ
                   value={volUnit}
                   display={volUnit}
                   options={volCycle}
-                  onSelect={(u) => selectVol(u as typeof volUnit)}
+                  onSelect={(u) => changeVolumeUnit(u as typeof volUnit)}
                   triggerClass="calc-unit tappable"
                   tapKey={volTap}
                 />
               ) : (
-                <span key={volTap} className="calc-unit tappable" onClick={() => selectVol(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
+                <span key={volTap} className="calc-unit tappable" onClick={() => changeVolumeUnit(volCycle[volCycle.indexOf(volUnit) === 0 ? 1 : 0])}>
                   {volUnit}
                 </span>
               )}

@@ -4,9 +4,13 @@
 
 /* Full-screen map app — extends behind notch/Dynamic Island */
 .app {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  min-height: calc(100% + env(safe-area-inset-bottom, 0px));
   overflow: hidden;
 }
 
@@ -88,9 +92,7 @@
   position: relative;
   padding: 10px 14px;
   padding-top: max(10px, env(safe-area-inset-top));
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: #eaeaea;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.5);
   box-shadow:
     0 0.5px 0 rgba(255, 255, 255, 0.6) inset,
@@ -134,9 +136,7 @@
 }
 
 .stat {
-  background: rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  background: #e6e6e6;
   color: rgba(0, 0, 0, 0.8);
   padding: 7px 14px;
   border-radius: 20px;
@@ -538,7 +538,7 @@ input[type="number"] {
 }
 
 .stat.tappable:active {
-  background: rgba(255, 255, 255, 0.55);
+  background: #f2f2f2;
   transform: scale(0.93);
   opacity: 1;
 }

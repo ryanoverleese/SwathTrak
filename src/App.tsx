@@ -53,11 +53,16 @@ function App() {
     return (localStorage.getItem('swathtrak_spray_view') as 'tilted' | 'overhead') || 'tilted';
   });
 
+  const [restoredSession] = useState(loadActiveSession);
+
   // Completed tanks in the current session
-  const [tanks, setTanks] = useState<Tank[]>([]);
+  const [tanks, setTanks] = useState<Tank[]>(() => restoredSession?.tanks || []);
   // Swaths for the current (active) tank
-  const [currentTankSwaths, setCurrentTankSwaths] = useState<SpraySwath[]>([]);
-  const [currentTankStart, setCurrentTankStart] = useState(Date.now);
+  const [currentTankSwaths, setCurrentTankSwaths] = useState<SpraySwath[]>(() =>
+    restoredSession?.currentTank?.swaths
+      || (restoredSession && restoredSession.tanks.length === 0 ? restoredSession.swaths : undefined)
+      || []);
+  const [currentTankStart, setCurrentTankStart] = useState(() => restoredSession?.currentTank?.startTime ?? Date.now());
 
   const [activeSwath, setActiveSwath] = useState<SpraySwath | null>(null);
   const [sessionId, setSessionId] = useState(() => {
@@ -79,6 +84,14 @@ function App() {
   const activeSwathRef = useRef(activeSwath);
   activeSwathRef.current = activeSwath;
 
+  const lastFixTimeRef = useRef<number | null>(null);
+  const finishSnapshotRef = useRef<{
+    isSpraying: boolean;
+    activeSwath: SpraySwath | null;
+    currentTankSwaths: SpraySwath[];
+    currentTankStart: number;
+  } | null>(null);
+
   const mapRef = useRef<SprayMapHandle>(null);
 
   // GPS is always active so we can show position on map
@@ -97,17 +110,6 @@ function App() {
   const tiltEnabled = isSpraying && sprayView === 'tilted';
   const compassRotation = !lockNorth && heading != null ? heading : 0;
 
-  // Restore active session on mount
-  useEffect(() => {
-    const saved = loadActiveSession();
-    if (saved) {
-      setTanks(saved.tanks || []);
-      if (saved.tanks.length === 0 && saved.swaths && saved.swaths.length > 0) {
-        setCurrentTankSwaths(saved.swaths);
-      }
-    }
-  }, []);
-
   // Auto-save active session whenever state changes
   useEffect(() => {
     const session: SpraySession = {
@@ -115,10 +117,15 @@ function App() {
       name: `Session ${new Date().toLocaleDateString()}`,
       date: new Date().toLocaleDateString(),
       tanks,
+      currentTank: {
+        id: `${sessionId}_current`,
+        swaths: activeSwath ? [...currentTankSwaths, activeSwath] : currentTankSwaths,
+        startTime: currentTankStart,
+      },
       totalAcres: calculateTotalAcres(allSwaths, activeSwath),
     };
     saveActiveSession(session);
-  }, [tanks, currentTankSwaths, activeSwath, sessionId]);
+  }, [tanks, currentTankSwaths, currentTankStart, activeSwath, sessionId]);
 
   // Keep screen awake while spraying so GPS doesn't pause when the display sleeps
   useEffect(() => {
@@ -144,16 +151,23 @@ function App() {
     const current = activeSwathRef.current;
     const lastPoint = current.points[current.points.length - 1];
 
+    const lastFixTime = lastFixTimeRef.current;
+    lastFixTimeRef.current = position.timestamp;
+    if (lastFixTime != null && position.timestamp - lastFixTime > 8000) {
+      if (current.points.length >= 2) {
+        setCurrentTankSwaths(prev => [...prev, { ...current, endTime: lastPoint.timestamp }]);
+      }
+      // Drop the first post-wake fix and seed the new segment with the next fix.
+      setActiveSwath({ ...current, id: generateId(), points: [], startTime: position.timestamp });
+      return;
+    }
+
     // Only add point if we've moved at least 3 feet (reduce noise)
     if (lastPoint && distanceFeet(lastPoint, position) < 3) return;
 
-    // Reject GPS outliers: skip points that arrive after a long gap (phone may have
-    // been sleeping and the first fix after wake is often stale or jumps to start)
+    // Also reject jumps whose implied speed exceeds 60 mph.
     if (lastPoint && lastPoint.timestamp && position.timestamp) {
       const elapsedSec = (position.timestamp - lastPoint.timestamp) / 1000;
-      // If more than 8 seconds passed, discard — GPS was likely paused
-      if (elapsedSec > 8) return;
-      // Also reject if implied speed exceeds 60 mph
       if (elapsedSec > 0) {
         const feet = distanceFeet(lastPoint, position);
         const mph = (feet / elapsedSec) * 0.6818;
@@ -179,6 +193,7 @@ function App() {
       setIsSpraying(false);
       setActiveSwath(null);
     } else {
+      lastFixTimeRef.current = position?.timestamp ?? null;
       // Start / Resume — begin a new swath segment
       const newSwath: SpraySwath = {
         id: generateId(),
@@ -192,8 +207,27 @@ function App() {
     }
   }, [isSpraying, position, sprayWidth, tankNumber]);
 
+  const handleWidthChange = useCallback((width: number) => {
+    if (width === sprayWidth) return;
+    const current = activeSwathRef.current;
+    if (isSpraying && current) {
+      if (current.points.length >= 2) {
+        setCurrentTankSwaths(prev => [...prev, { ...current, endTime: Date.now() }]);
+      }
+      const lastPoint = current.points[current.points.length - 1];
+      setActiveSwath({
+        ...current,
+        id: generateId(),
+        points: lastPoint ? [lastPoint] : [],
+        widthFeet: width,
+        startTime: Date.now(),
+      });
+    }
+    setSprayWidth(width);
+  }, [isSpraying, sprayWidth]);
+
   /** Finalize the current tank's swaths (stopping spray if active or paused) */
-  function finalizeCurrentTankSwaths(): SpraySwath[] {
+  const finalizeCurrentTankSwaths = useCallback((): SpraySwath[] => {
     let swaths = currentTankSwaths;
     if (activeSwathRef.current && activeSwathRef.current.points.length >= 2) {
       const finished: SpraySwath = {
@@ -205,7 +239,7 @@ function App() {
     setIsSpraying(false);
     setActiveSwath(null);
     return swaths;
-  }
+  }, [currentTankSwaths]);
 
   // ---- Refill flow ----
   const handleRefill = useCallback(() => {
@@ -213,7 +247,7 @@ function App() {
     if (swaths.length === 0) return;
     setCurrentTankSwaths(swaths);
     setShowTankSummary(true);
-  }, [isSpraying, currentTankSwaths]);
+  }, [finalizeCurrentTankSwaths]);
 
   const handleTankSave = useCallback((gallons: number | undefined) => {
     const tank: Tank = {
@@ -235,7 +269,11 @@ function App() {
 
   // ---- Finish session flow ----
   const handleFinish = useCallback(() => {
+    finishSnapshotRef.current = {
+      isSpraying, activeSwath: activeSwathRef.current, currentTankSwaths, currentTankStart,
+    };
     const swaths = finalizeCurrentTankSwaths();
+    setCurrentTankSwaths(swaths);
 
     let allTanks = [...tanks];
     if (swaths.length > 0) {
@@ -251,7 +289,7 @@ function App() {
 
     setFinishedTanks(allTanks);
     setShowSummary(true);
-  }, [isSpraying, currentTankSwaths, tanks, currentTankStart]);
+  }, [isSpraying, currentTankSwaths, tanks, currentTankStart, finalizeCurrentTankSwaths]);
 
   const handleSaveSummary = useCallback((name: string, gallonsPerTank: (number | undefined)[]) => {
     const tanksWithGallons = finishedTanks.map((t, i) => ({
@@ -284,37 +322,48 @@ function App() {
   }, [sessionId, finishedTanks]);
 
   const handleCancelSummary = useCallback(() => {
-    const lastTank = finishedTanks[finishedTanks.length - 1];
-    const previousTanks = finishedTanks.slice(0, -1);
-    setTanks(previousTanks);
-    setCurrentTankSwaths(lastTank ? lastTank.swaths : []);
-    setCurrentTankStart(lastTank ? lastTank.startTime : Date.now());
+    const snapshot = finishSnapshotRef.current;
+    if (snapshot) {
+      setIsSpraying(snapshot.isSpraying);
+      setActiveSwath(snapshot.activeSwath);
+      setCurrentTankSwaths(snapshot.currentTankSwaths);
+      setCurrentTankStart(snapshot.currentTankStart);
+    }
+    finishSnapshotRef.current = null;
     setFinishedTanks([]);
     setShowSummary(false);
-  }, [finishedTanks]);
+  }, []);
 
   const handleLoadSession = useCallback((session: SpraySession) => {
-    const swaths = session.tanks.flatMap((t) => t.swaths);
+    const swaths = [...session.tanks.flatMap((t) => t.swaths), ...(session.currentTank?.swaths || [])];
     setPastSessionSwaths(swaths);
     setShowSessions(false);
   }, []);
 
   const handleResumeSession = useCallback((session: SpraySession) => {
-    if (isSpraying && activeSwathRef.current) {
-      setIsSpraying(false);
-      setActiveSwath(null);
+    const swaths = finalizeCurrentTankSwaths();
+    if (tanks.length > 0 || swaths.length > 0) {
+      saveSession({
+        id: sessionId,
+        name: `Session ${new Date().toLocaleDateString()}`,
+        date: new Date().toLocaleDateString(),
+        tanks: swaths.length > 0
+          ? [...tanks, { id: `${sessionId}_current`, swaths, startTime: currentTankStart, endTime: Date.now() }]
+          : tanks,
+        totalAcres: calculateTotalAcres([...tanks.flatMap(t => t.swaths), ...swaths], null),
+      });
     }
 
     setSessionId(session.id);
     setTanks(session.tanks);
-    setCurrentTankSwaths([]);
-    setCurrentTankStart(Date.now());
+    setCurrentTankSwaths(session.currentTank?.swaths || []);
+    setCurrentTankStart(session.currentTank?.startTime ?? Date.now());
     setPastSessionSwaths([]);
 
     deleteSession(session.id);
     setSessions(loadSessions());
     setShowSessions(false);
-  }, [isSpraying]);
+  }, [tanks, currentTankStart, sessionId, finalizeCurrentTankSwaths]);
 
   const handleRenameSession = useCallback((id: string, name: string) => {
     renameSession(id, name);
@@ -371,7 +420,7 @@ function App() {
         lockNorth={lockNorth}
         compassRotation={compassRotation}
         onSprayToggle={handleSprayToggle}
-        onWidthChange={setSprayWidth}
+        onWidthChange={handleWidthChange}
         onRefill={handleRefill}
         onEndSession={handleFinish}
         onOpenSessions={() => {
