@@ -12,7 +12,7 @@ const steps = [
       </svg>
     ),
     title: 'Adjust Spray Width',
-    text: 'Tap the width pill (e.g. "16 ft") in the top bar to open width settings. Use the slider or preset buttons to match your boom width.',
+    text: 'Tap the amber width control in the right thumb stack (or the width pill in the top bar). Use the slider or presets to match your boom width.',
   },
   {
     icon: (
@@ -45,7 +45,7 @@ const steps = [
       </svg>
     ),
     title: 'Stop Spraying',
-    text: 'While spraying, two buttons appear: "Stop & End" to finish the session, or "Stop & Refill" when your tank is empty.',
+    text: 'While spraying, tap PAUSE anytime. "Stop & Refill" ends the tank. "Stop & End" asks you to tap again to confirm so a bump does not finish the job by accident.',
   },
   {
     icon: (
@@ -66,7 +66,7 @@ const steps = [
       </svg>
     ),
     title: 'End & Save Session',
-    text: 'Tap "Stop & End" or the red "Finish" button in the top bar. Name your session and enter volume per tank, then save.',
+    text: 'Tap "Stop & End" (twice to confirm) or Finish in the top bar. Name your session and enter volume per tank, then save.',
   },
   {
     icon: (

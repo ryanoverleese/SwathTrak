@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAreaUnit, formatArea } from '../utils/units';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { useAreaUnit, formatArea, UnitSystemContext } from '../utils/units';
 
 // Slider positions 0-58 map to widths 2-60 (step 1), positions 59-64 map to 70-120 (step 10)
 function sliderToWidth(pos: number): number {
@@ -10,6 +10,14 @@ function sliderToWidth(pos: number): number {
 function widthToSlider(width: number): number {
   if (width <= 60) return width - 2;        // 2→0, 60→58
   return 58 + Math.round((width - 60) / 10); // 70→59, 120→64
+}
+
+function formatSprayWidth(widthFeet: number, metric: boolean): string {
+  if (metric) {
+    const meters = widthFeet * 0.3048;
+    return meters >= 10 ? `${meters.toFixed(0)} m` : `${meters.toFixed(1)} m`;
+  }
+  return `${widthFeet} ft`;
 }
 
 interface ControlsProps {
@@ -55,53 +63,91 @@ export function Controls({
   onToggleLockNorth,
   onToggleSprayView,
 }: ControlsProps) {
-  const [showSettings, setShowSettings] = useState(false);
+  const [showWidth, setShowWidth] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
+  const unitSystem = useContext(UnitSystemContext);
+  const metric = unitSystem === 'metric';
+  const widthLabel = formatSprayWidth(sprayWidth, metric);
+
+  // Auto-cancel confirm-end after a few seconds of inaction
+  useEffect(() => {
+    if (!confirmEnd) return;
+    const t = window.setTimeout(() => setConfirmEnd(false), 3000);
+    return () => window.clearTimeout(t);
+  }, [confirmEnd]);
+
+  // Leaving spray mode clears confirm state
+  useEffect(() => {
+    if (!isSpraying) setConfirmEnd(false);
+  }, [isSpraying]);
+
+  const handleEndPress = useCallback(() => {
+    if (confirmEnd) {
+      setConfirmEnd(false);
+      onEndSession();
+      return;
+    }
+    setConfirmEnd(true);
+  }, [confirmEnd, onEndSession]);
+
+  const openWidth = useCallback(() => {
+    setShowWidth((v) => !v);
+    setConfirmEnd(false);
+  }, []);
 
   return (
     <div className="controls">
-      {/* Top bar - stats */}
-      <div className="top-bar">
-        <div className="stats">
-          <span key={areaTap} className="stat tappable" onClick={cycleArea}>
-            {formatArea(totalAcres, areaUnit)}
-          </span>
-          <span className="stat width-stat" onClick={() => setShowSettings(!showSettings)}>
-            {sprayWidth} ft
-          </span>
-          <span className="stat tank-stat">
-            Tank {tankNumber}
-          </span>
+      {/* Floating HUD top bar */}
+      <div className="hud-top">
+        <div className="top-bar">
+          <div className="stats">
+            <span key={areaTap} className="stat tappable" onClick={cycleArea}>
+              {formatArea(totalAcres, areaUnit)}
+            </span>
+            <span className="stat width-stat" onClick={openWidth} title="Spray width">
+              {widthLabel}
+            </span>
+            <span className="stat tank-stat">
+              Tank {tankNumber}
+            </span>
+          </div>
+
+          {!isSpraying && totalAcres > 0 && (
+            <div className="top-bar-actions">
+              <button className="refill-btn" onClick={onRefill}>
+                Refill
+              </button>
+              <button
+                className={`finish-btn${confirmEnd ? ' finish-btn--confirm' : ''}`}
+                onClick={handleEndPress}
+              >
+                {confirmEnd ? 'Confirm?' : 'Finish'}
+              </button>
+            </div>
+          )}
         </div>
 
-        {!isSpraying && totalAcres > 0 && (
-          <div className="top-bar-actions">
-            <button className="refill-btn" onClick={onRefill}>
-              Refill
-            </button>
-            <button className="finish-btn" onClick={onEndSession}>
-              Finish
-            </button>
+        {/* GPS status pinned under the top bar — never center-map */}
+        {(gpsError || gpsAccuracy !== null) && (
+          <div className="gps-rail">
+            {gpsError ? (
+              <div className="gps-error">GPS: {gpsError}</div>
+            ) : (
+              <div className={`gps-accuracy ${gpsAccuracy! > 10 ? 'poor' : 'good'}`}>
+                GPS: ±{Math.round(gpsAccuracy!)}m
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* GPS status */}
-      {gpsError && (
-        <div className="gps-error">GPS: {gpsError}</div>
-      )}
-      {gpsAccuracy !== null && !gpsError && (
-        <div className={`gps-accuracy ${gpsAccuracy > 10 ? 'poor' : 'good'}`}>
-          GPS: ±{Math.round(gpsAccuracy)}m
-        </div>
-      )}
-
-      {/* Settings panel */}
-      {showSettings && (
-        <div className="settings-panel">
-          <div className="settings-header">
-            <label>Spray Width: {sprayWidth} ft</label>
-            <button className="close-btn" onClick={() => setShowSettings(false)}>✕</button>
+      {/* Width panel — anchored above the thumb zone */}
+      {showWidth && (
+        <div className="width-sheet">
+          <div className="width-sheet-header">
+            <label>Spray Width: {widthLabel}</label>
+            <button className="close-btn close-btn--dark" onClick={() => setShowWidth(false)}>✕</button>
           </div>
           <input
             type="range"
@@ -111,17 +157,29 @@ export function Controls({
             value={widthToSlider(sprayWidth)}
             onChange={(e) => onWidthChange(sliderToWidth(Number(e.target.value)))}
           />
+          <div className="width-presets">
+            {[8, 12, 16, 20, 30, 40].map((w) => (
+              <button
+                key={w}
+                type="button"
+                className={`width-preset${sprayWidth === w ? ' active' : ''}`}
+                onClick={() => onWidthChange(w)}
+              >
+                {formatSprayWidth(w, metric)}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Bottom-right thumb action cluster */}
       <div className="thumb-actions">
-        <button className="zoom-btn" onClick={onZoomIn}>
+        <button className="zoom-btn" onClick={onZoomIn} aria-label="Zoom in">
           <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="12" y1="6" x2="12" y2="18" /><line x1="6" y1="12" x2="18" y2="12" />
           </svg>
         </button>
-        <button className="zoom-btn" onClick={onZoomOut}>
+        <button className="zoom-btn" onClick={onZoomOut} aria-label="Zoom out">
           <svg width="28" height="28" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="6" y1="12" x2="18" y2="12" />
           </svg>
@@ -129,6 +187,7 @@ export function Controls({
         <button
           className={`zoom-btn compass-btn${lockNorth ? ' compass-locked' : ''}`}
           onClick={onToggleLockNorth}
+          aria-label={lockNorth ? 'Unlock compass' : 'Lock north'}
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
             style={{
@@ -145,6 +204,7 @@ export function Controls({
             className={`zoom-btn${sprayView === 'tilted' ? ' compass-locked' : ''}`}
             onClick={onToggleSprayView}
             title={sprayView === 'tilted' ? 'Switch to overhead' : 'Switch to tilted'}
+            aria-label={sprayView === 'tilted' ? 'Switch to overhead' : 'Switch to tilted'}
           >
             {sprayView === 'tilted' ? (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -161,7 +221,7 @@ export function Controls({
         )}
         {!isSpraying && (
           <>
-            <button className="zoom-btn" onClick={onOpenSessions} title="Sessions">
+            <button className="zoom-btn" onClick={onOpenSessions} title="Sessions" aria-label="Sessions">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
                 <path d="M14 2v6h6" />
@@ -170,7 +230,7 @@ export function Controls({
                 <path d="M10 9H8" />
               </svg>
             </button>
-            <button className="zoom-btn" onClick={onOpenSettings} title="Settings">
+            <button className="zoom-btn" onClick={onOpenSettings} title="Settings" aria-label="Settings">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                 <circle cx="12" cy="12" r="3" />
@@ -178,16 +238,34 @@ export function Controls({
             </button>
           </>
         )}
+        {/* Width — lowest in the stack so it's closest to the thumb */}
+        <button
+          className={`zoom-btn width-thumb${showWidth ? ' compass-locked' : ''}`}
+          onClick={openWidth}
+          title="Spray width"
+          aria-label={`Spray width ${widthLabel}`}
+        >
+          <span className="width-thumb-label">{widthLabel.replace(' ', '\n')}</span>
+        </button>
       </div>
 
       {/* Bottom actions */}
       {isSpraying ? (
         <div className="spray-btn-container">
-          <div style={{ display: 'flex', gap: 10, width: '100%' }}>
-            <button className="stop-action-btn stop-end" onClick={onEndSession}>
-              Stop & End
+          <div className="stop-row">
+            <button
+              className={`stop-action-btn stop-end${confirmEnd ? ' stop-end--confirm' : ''}`}
+              onClick={handleEndPress}
+            >
+              {confirmEnd ? 'Tap again to End' : 'Stop & End'}
             </button>
-            <button className="stop-action-btn stop-refill" onClick={onRefill}>
+            <button
+              className="stop-action-btn stop-refill"
+              onClick={() => {
+                setConfirmEnd(false);
+                onRefill();
+              }}
+            >
               Stop & Refill
             </button>
           </div>
