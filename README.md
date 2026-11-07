@@ -91,9 +91,11 @@ tracking. Keep-awake prevents automatic screen sleep while spraying; manually
 locking the device or switching apps can still interrupt GPS. Do not enable
 Background Modes / Location updates for this foreground workflow.
 
-Host `docs/privacy-policy.html` at a public HTTPS URL and use that URL in App
-Store Connect. The policy uses the existing in-app contact, support@swathtrak.com;
-verify that mailbox receives mail before submission.
+`public/privacy.html` is the site copy of `docs/privacy-policy.html` and is
+served at `/privacy.html` (`/privacy` redirects there). After this is deployed,
+use `https://swathtrak.netlify.app/privacy.html` in App Store Connect. The
+policy uses the existing in-app contact, support@swathtrak.com; verify that
+mailbox receives mail before submission.
 
 ## Quick Browser Test
 
