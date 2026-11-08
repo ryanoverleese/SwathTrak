@@ -11,6 +11,7 @@ import { GlassSelect } from './GlassSelect';
 interface TankSummaryProps {
   tankNumber: number;
   swaths: SpraySwath[];
+  showRefillHint?: boolean;
   onSave: (gallons: number | undefined) => void;
   onCancel: () => void;
   onDeleteJob: () => void;
@@ -37,7 +38,7 @@ function calcSprayTime(swaths: SpraySwath[]): number {
   return total;
 }
 
-export function TankSummary({ tankNumber, swaths, onSave, onCancel, onDeleteJob }: TankSummaryProps) {
+export function TankSummary({ tankNumber, swaths, showRefillHint = false, onSave, onCancel, onDeleteJob }: TankSummaryProps) {
   const [volStr, setVolStr] = useState('');
   const [areaUnit, cycleArea, areaTap] = useAreaUnit();
   const [rateUnit, , rateTap, , rateCycle, selectRate] = useRateUnit();
@@ -65,6 +66,9 @@ export function TankSummary({ tankNumber, swaths, onSave, onCancel, onDeleteJob 
     <div className="summary-overlay">
       <div className="summary-panel">
         <h2>Tank {tankNumber} Complete</h2>
+        {showRefillHint && (
+          <p className="refill-hint">Refill starts the next tank. Enter volume if you want a rate, then continue.</p>
+        )}
 
         <div className="summary-stats">
           <div className="summary-stat-row" onClick={cycleArea}>

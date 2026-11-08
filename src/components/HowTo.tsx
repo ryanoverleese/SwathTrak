@@ -78,7 +78,7 @@ const steps = [
       </svg>
     ),
     title: 'View Past Sessions',
-    text: 'Open the menu and tap "Sessions" to see saved sessions. Tap one to overlay it on the map, or resume where you left off.',
+    text: 'Open Sessions to see saved jobs. "Show on Map" overlays one in blue (dismiss from the chip, or it clears when you tap SPRAY). Resume continues that job without removing it from history.',
   },
   {
     icon: (
@@ -88,7 +88,7 @@ const steps = [
       </svg>
     ),
     title: 'Auto-Recovery',
-    text: 'If the app closes unexpectedly, your session is automatically saved. It will be restored the next time you open the app.',
+    text: 'If the app closes unexpectedly, your session is saved. Next open shows a “Session restored” banner — tap SPRAY to continue recording.',
   },
   {
     icon: (

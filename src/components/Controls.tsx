@@ -30,6 +30,10 @@ interface ControlsProps {
   lockNorth: boolean;
   compassRotation: number;
   sprayView: 'tilted' | 'overhead';
+  showRestoredBanner?: boolean;
+  onDismissRestored?: () => void;
+  pastOverlayName?: string | null;
+  onClearPastOverlay?: () => void;
   onSprayToggle: () => void;
   onWidthChange: (width: number) => void;
   onRefill: () => void;
@@ -52,6 +56,10 @@ export function Controls({
   lockNorth,
   compassRotation,
   sprayView,
+  showRestoredBanner = false,
+  onDismissRestored,
+  pastOverlayName = null,
+  onClearPastOverlay,
   onSprayToggle,
   onWidthChange,
   onRefill,
@@ -128,18 +136,44 @@ export function Controls({
           )}
         </div>
 
-        {/* GPS status pinned under the top bar — never center-map */}
-        {(gpsError || gpsAccuracy !== null) && (
-          <div className="gps-rail">
-            {gpsError ? (
+        {/* Status chips pinned under the top bar — never center-map */}
+        <div className="status-rail">
+          {showRestoredBanner && (
+            <div className="status-chip status-chip--restore" role="status">
+              <span>Session restored — tap SPRAY to continue</span>
+              <button
+                type="button"
+                className="status-chip-dismiss"
+                aria-label="Dismiss"
+                onClick={onDismissRestored}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {pastOverlayName && (
+            <div className="status-chip status-chip--past" role="status">
+              <span>Showing: {pastOverlayName}</span>
+              <button
+                type="button"
+                className="status-chip-dismiss"
+                aria-label="Clear past overlay"
+                onClick={onClearPastOverlay}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {(gpsError || gpsAccuracy !== null) && (
+            gpsError ? (
               <div className="gps-error">GPS: {gpsError}</div>
             ) : (
               <div className={`gps-accuracy ${gpsAccuracy! > 10 ? 'poor' : 'good'}`}>
                 GPS: ±{Math.round(gpsAccuracy!)}m
               </div>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
       </div>
 
       {/* Width panel — anchored above the thumb zone */}
