@@ -205,11 +205,58 @@
   background: rgba(240, 180, 41, 0.3);
 }
 
-/* GPS status — pinned under top bar, never mid-map */
-.gps-rail {
+/* Status chips — pinned under top bar, never mid-map */
+.status-rail {
   display: flex;
-  justify-content: flex-start;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
   padding: 0 2px;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(100%, 340px);
+  padding: 8px 10px 8px 14px;
+  border-radius: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #fff;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 0.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.status-chip--restore {
+  background: rgba(240, 180, 41, 0.88);
+  color: var(--accent-ink);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.status-chip--past {
+  background: rgba(66, 165, 245, 0.85);
+}
+
+.status-chip-dismiss {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.status-chip-dismiss:active {
+  transform: scale(0.94);
 }
 
 .gps-error,
@@ -226,6 +273,19 @@
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 0.5px solid rgba(255, 255, 255, 0.22);
   max-width: calc(100% - 72px);
+}
+
+.refill-hint {
+  margin: -8px 0 16px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(180, 130, 20, 0.12);
+  border: 0.5px solid rgba(180, 130, 20, 0.25);
+  color: rgb(140, 100, 10);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .gps-error {

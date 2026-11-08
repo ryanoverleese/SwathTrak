@@ -55,6 +55,14 @@ function App() {
   });
 
   const [restoredSession] = useState(loadActiveSession);
+  const restoredHadWork = !!(
+    restoredSession &&
+    (
+      restoredSession.tanks.some((t) => t.swaths.length > 0) ||
+      (restoredSession.currentTank?.swaths.length ?? 0) > 0 ||
+      (restoredSession.swaths?.length ?? 0) > 0
+    )
+  );
 
   // Completed tanks in the current session
   const [tanks, setTanks] = useState<Tank[]>(() => restoredSession?.tanks || []);
@@ -70,10 +78,16 @@ function App() {
     const saved = loadActiveSession();
     return saved ? saved.id : generateId();
   });
+  const [sessionName, setSessionName] = useState(() =>
+    restoredSession?.name || `Session ${new Date().toLocaleDateString()}`
+  );
+  const [showRestoredBanner, setShowRestoredBanner] = useState(restoredHadWork);
   const [showSessions, setShowSessions] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [sessions, setSessions] = useState<SpraySession[]>(loadSessions);
   const [pastSessionSwaths, setPastSessionSwaths] = useState<SpraySwath[]>([]);
+  const [pastSessionName, setPastSessionName] = useState<string | null>(null);
+  const [showRefillHint, setShowRefillHint] = useState(false);
   const [lockNorth, setLockNorth] = useState(false);
 
   // Modals
@@ -115,7 +129,7 @@ function App() {
   useEffect(() => {
     const session: SpraySession = {
       id: sessionId,
-      name: `Session ${new Date().toLocaleDateString()}`,
+      name: sessionName,
       date: new Date().toLocaleDateString(),
       tanks,
       currentTank: {
@@ -126,7 +140,7 @@ function App() {
       totalAcres: calculateTotalAcres(allSwaths, activeSwath),
     };
     saveActiveSession(session);
-  }, [tanks, currentTankSwaths, currentTankStart, activeSwath, sessionId]);
+  }, [tanks, currentTankSwaths, currentTankStart, activeSwath, sessionId, sessionName]);
 
   useKeepAwake(isSpraying);
 
@@ -169,6 +183,11 @@ function App() {
     setActiveSwath(updated);
   }, [isSpraying, position]);
 
+  const clearPastOverlay = useCallback(() => {
+    setPastSessionSwaths([]);
+    setPastSessionName(null);
+  }, []);
+
   const handleSprayToggle = useCallback(() => {
     if (isSpraying) {
       // Pause — finalize this segment so the gap isn't marked as sprayed
@@ -179,6 +198,9 @@ function App() {
       setIsSpraying(false);
       setActiveSwath(null);
     } else {
+      // Starting a live job — past overlay must not look like coverage
+      clearPastOverlay();
+      setShowRestoredBanner(false);
       lastFixTimeRef.current = position?.timestamp ?? null;
       // Start / Resume — begin a new swath segment
       const newSwath: SpraySwath = {
@@ -191,7 +213,7 @@ function App() {
       setActiveSwath(newSwath);
       setIsSpraying(true);
     }
-  }, [isSpraying, position, sprayWidth, tankNumber]);
+  }, [isSpraying, position, sprayWidth, tankNumber, clearPastOverlay]);
 
   const handleWidthChange = useCallback((width: number) => {
     if (width === sprayWidth) return;
@@ -232,6 +254,16 @@ function App() {
     const swaths = finalizeCurrentTankSwaths();
     if (swaths.length === 0) return;
     setCurrentTankSwaths(swaths);
+    try {
+      if (!localStorage.getItem('swathtrak_refill_hint_seen')) {
+        localStorage.setItem('swathtrak_refill_hint_seen', '1');
+        setShowRefillHint(true);
+      } else {
+        setShowRefillHint(false);
+      }
+    } catch {
+      setShowRefillHint(false);
+    }
     setShowTankSummary(true);
   }, [finalizeCurrentTankSwaths]);
 
@@ -303,9 +335,12 @@ function App() {
     setFinishedTanks([]);
     setShowSummary(false);
     setSessionId(generateId());
+    setSessionName(`Session ${new Date().toLocaleDateString()}`);
+    setShowRestoredBanner(false);
+    clearPastOverlay();
     clearActiveSession();
     setSessions(loadSessions());
-  }, [sessionId, finishedTanks]);
+  }, [sessionId, finishedTanks, clearPastOverlay]);
 
   const handleCancelSummary = useCallback(() => {
     const snapshot = finishSnapshotRef.current;
@@ -323,15 +358,28 @@ function App() {
   const handleLoadSession = useCallback((session: SpraySession) => {
     const swaths = [...session.tanks.flatMap((t) => t.swaths), ...(session.currentTank?.swaths || [])];
     setPastSessionSwaths(swaths);
+    setPastSessionName(session.name);
     setShowSessions(false);
   }, []);
 
   const handleResumeSession = useCallback((session: SpraySession) => {
     const swaths = finalizeCurrentTankSwaths();
-    if (tanks.length > 0 || swaths.length > 0) {
+    const hasCurrentWork = tanks.length > 0 || swaths.length > 0;
+
+    // Resume continues a saved job — keep it in the archive. If there's
+    // already live work, ask before replacing it (never silent auto-archive).
+    if (hasCurrentWork) {
+      const saveFirst = window.confirm(
+        'You have an unsaved job in progress. Save it before resuming another session?'
+      );
+      if (!saveFirst) {
+        // Restore spray state we just finalized for the confirm path
+        setCurrentTankSwaths(swaths);
+        return;
+      }
       saveSession({
         id: sessionId,
-        name: `Session ${new Date().toLocaleDateString()}`,
+        name: sessionName,
         date: new Date().toLocaleDateString(),
         tanks: swaths.length > 0
           ? [...tanks, { id: `${sessionId}_current`, swaths, startTime: currentTankStart, endTime: Date.now() }]
@@ -341,15 +389,15 @@ function App() {
     }
 
     setSessionId(session.id);
+    setSessionName(session.name);
     setTanks(session.tanks);
     setCurrentTankSwaths(session.currentTank?.swaths || []);
     setCurrentTankStart(session.currentTank?.startTime ?? Date.now());
-    setPastSessionSwaths([]);
-
-    deleteSession(session.id);
+    clearPastOverlay();
+    setShowRestoredBanner(false);
     setSessions(loadSessions());
     setShowSessions(false);
-  }, [tanks, currentTankStart, sessionId, finalizeCurrentTankSwaths]);
+  }, [tanks, currentTankStart, sessionId, sessionName, finalizeCurrentTankSwaths, clearPastOverlay]);
 
   const handleRenameSession = useCallback((id: string, name: string) => {
     renameSession(id, name);
@@ -367,13 +415,15 @@ function App() {
     setTanks([]);
     setCurrentTankSwaths([]);
     setCurrentTankStart(Date.now());
-    setPastSessionSwaths([]);
+    clearPastOverlay();
     setFinishedTanks([]);
     setShowSummary(false);
     setShowTankSummary(false);
+    setShowRestoredBanner(false);
     setSessionId(generateId());
+    setSessionName(`Session ${new Date().toLocaleDateString()}`);
     clearActiveSession();
-  }, []);
+  }, [clearPastOverlay]);
 
   const totalAcres = calculateTotalAcres(allSwaths, activeSwath);
 
@@ -405,6 +455,10 @@ function App() {
         gpsError={gpsError}
         lockNorth={lockNorth}
         compassRotation={compassRotation}
+        showRestoredBanner={showRestoredBanner}
+        onDismissRestored={() => setShowRestoredBanner(false)}
+        pastOverlayName={pastSessionName}
+        onClearPastOverlay={clearPastOverlay}
         onSprayToggle={handleSprayToggle}
         onWidthChange={handleWidthChange}
         onRefill={handleRefill}
@@ -428,6 +482,7 @@ function App() {
         <TankSummary
           tankNumber={tankNumber}
           swaths={currentTankSwaths}
+          showRefillHint={showRefillHint}
           onSave={handleTankSave}
           onCancel={handleTankCancel}
           onDeleteJob={handleCancelJob}
@@ -435,7 +490,7 @@ function App() {
       )}
       {showSummary && (
         <SessionSummary
-          defaultName={`Session ${new Date().toLocaleDateString()}`}
+          defaultName={sessionName}
           tanks={finishedTanks}
           onSave={handleSaveSummary}
           onCancel={handleCancelSummary}
