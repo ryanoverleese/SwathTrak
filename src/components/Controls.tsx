@@ -86,14 +86,17 @@ export function Controls({
         )}
       </div>
 
-      {/* GPS status */}
+      {/* GPS status. Locating is the real wait for the first fix, with no timer. */}
       {gpsError && (
-        <div className="gps-error">GPS: {gpsError}</div>
+        <div className="gps-error" role="status">GPS: {gpsError}</div>
       )}
       {gpsAccuracy !== null && !gpsError && (
-        <div className={`gps-accuracy ${gpsAccuracy > 10 ? 'poor' : 'good'}`}>
+        <div className={`gps-accuracy ${gpsAccuracy > 10 ? 'poor' : 'good'}`} role="status">
           GPS: ±{Math.round(gpsAccuracy)}m
         </div>
+      )}
+      {gpsAccuracy === null && !gpsError && (
+        <div className="gps-accuracy pending" role="status">GPS: locating…</div>
       )}
 
       {/* Settings panel */}

@@ -308,5 +308,12 @@ export const SprayMap = forwardRef<SprayMapHandle, SprayMapProps>(function Spray
     });
   }, [pastSessionSwaths, mapReady]);
 
-  return <div className="map-container" ref={mapContainer} />;
+  return (
+    <>
+      <div className="map-container" ref={mapContainer} />
+      {!mapReady && (
+        <div className="map-loading" role="status">Loading map…</div>
+      )}
+    </>
+  );
 });

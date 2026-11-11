@@ -1,0 +1,5 @@
+# Spray sessions and coverage stay on the device. They have no public URLs.
+User-agent: *
+Allow: /
+
+Sitemap: https://swathtrak.netlify.app/sitemap.xml

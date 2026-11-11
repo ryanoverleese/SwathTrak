@@ -1,0 +1,3 @@
+# Keep unknown URLs on the custom 404. Do not rewrite every path to the app shell.
+/privacy    /privacy.html    301
+/privacy/   /privacy.html    301
